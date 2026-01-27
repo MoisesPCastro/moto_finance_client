@@ -11,7 +11,13 @@ interface StatsCardProps {
   trend?: string;
 }
 
-export default function StatsCard({ title, value, icon, color, trend }: StatsCardProps) {
+export default function StatsCard({
+  title,
+  value,
+  icon,
+  color,
+  trend,
+}: StatsCardProps) {
   const colors = {
     primary: 'bg-[#FFC107] text-black',
     success: 'bg-green-500 text-white',
@@ -24,15 +30,15 @@ export default function StatsCard({ title, value, icon, color, trend }: StatsCar
     <Card className="shadow-md hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">{title}</p>
-          <p className="text-2xl font-bold mt-2">{typeof value === 'number' ? `R$ ${value.toFixed(2)}` : value}</p>
-          {trend && (
-            <p className="text-xs mt-1 text-gray-500">{trend}</p>
-          )}
+          <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+            {title}
+          </p>
+          <p className="text-2xl font-bold mt-2">
+            {typeof value === 'number' ? `R$ ${value.toFixed(2)}` : value}
+          </p>
+          {trend && <p className="text-xs mt-1 text-gray-500">{trend}</p>}
         </div>
-        <div className={`p-3 rounded-full ${colors[color]}`}>
-          {icon}
-        </div>
+        <div className={`p-3 rounded-full ${colors[color]}`}>{icon}</div>
       </div>
     </Card>
   );

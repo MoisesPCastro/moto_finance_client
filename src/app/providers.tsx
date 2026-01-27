@@ -9,9 +9,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <PrimeReactProvider>
       <ToastProvider>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </ToastProvider>
     </PrimeReactProvider>
   );

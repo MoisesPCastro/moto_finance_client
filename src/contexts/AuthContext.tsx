@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { apiClient } from '@/lib/api';
 import { IUser } from '@/lib/interface';
 
@@ -10,7 +16,11 @@ interface AuthContextType {
   loading: boolean;
   setCurrentUser: (user: IUser | null) => void;
   loadUsers: () => Promise<void>;
-  createUser: (data: { email: string; name: string; password: string }) => Promise<IUser>;
+  createUser: (data: {
+    email: string;
+    name: string;
+    password: string;
+  }) => Promise<IUser>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (savedUser) {
           setCurrentUser(JSON.parse(savedUser));
         }
-        
+
         // Carregar lista de usuários
         await loadUsers();
       } catch (error) {
@@ -54,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiClient.getUsers();
       setUsers(response.data);
-      
+
       // Salvar no localStorage
       localStorage.setItem('motoFinance_users', JSON.stringify(response.data));
     } catch (error) {
@@ -67,7 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createUser = async (data: { email: string; name: string; password: string }) => {
+  const createUser = async (data: {
+    email: string;
+    name: string;
+    password: string;
+  }) => {
     const response = await apiClient.createUser(data);
     await loadUsers(); // Recarregar lista de usuários
     return response.data;
@@ -76,21 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Salvar usuário atual no localStorage quando mudar
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('motoFinance_currentUser', JSON.stringify(currentUser));
+      localStorage.setItem(
+        'motoFinance_currentUser',
+        JSON.stringify(currentUser),
+      );
     } else {
       localStorage.removeItem('motoFinance_currentUser');
     }
   }, [currentUser]);
 
   return (
-    <AuthContext.Provider value={{
-      currentUser,
-      users,
-      loading,
-      setCurrentUser,
-      loadUsers,
-      createUser,
-    }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        users,
+        loading,
+        setCurrentUser,
+        loadUsers,
+        createUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

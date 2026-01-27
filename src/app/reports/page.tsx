@@ -26,22 +26,22 @@ export default function ReportsPage() {
   const mockReportData = {
     weekly: {
       entries: [
-        { day: 'Segunda', gross: 220.50, expenses: 65.25, net: 155.25 },
-        { day: 'Terça', gross: 195.75, expenses: 55.80, net: 139.95 },
-        { day: 'Quarta', gross: 240.00, expenses: 70.50, net: 169.50 },
-        { day: 'Quinta', gross: 210.25, expenses: 60.75, net: 149.50 },
-        { day: 'Sexta', gross: 280.00, expenses: 85.25, net: 194.75 },
+        { day: 'Segunda', gross: 220.5, expenses: 65.25, net: 155.25 },
+        { day: 'Terça', gross: 195.75, expenses: 55.8, net: 139.95 },
+        { day: 'Quarta', gross: 240.0, expenses: 70.5, net: 169.5 },
+        { day: 'Quinta', gross: 210.25, expenses: 60.75, net: 149.5 },
+        { day: 'Sexta', gross: 280.0, expenses: 85.25, net: 194.75 },
       ],
-      totals: { gross: 1146.50, expenses: 337.55, net: 808.95 },
+      totals: { gross: 1146.5, expenses: 337.55, net: 808.95 },
     },
     monthly: {
       byWeek: [
-        { week: 'Semana 1', gross: 1146.50, expenses: 337.55, net: 808.95 },
-        { week: 'Semana 2', gross: 1250.75, expenses: 320.25, net: 930.50 },
-        { week: 'Semana 3', gross: 1320.00, expenses: 350.75, net: 969.25 },
-        { week: 'Semana 4', gross: 1105.25, expenses: 295.50, net: 809.75 },
+        { week: 'Semana 1', gross: 1146.5, expenses: 337.55, net: 808.95 },
+        { week: 'Semana 2', gross: 1250.75, expenses: 320.25, net: 930.5 },
+        { week: 'Semana 3', gross: 1320.0, expenses: 350.75, net: 969.25 },
+        { week: 'Semana 4', gross: 1105.25, expenses: 295.5, net: 809.75 },
       ],
-      totals: { gross: 4822.50, expenses: 1304.05, net: 3518.45 },
+      totals: { gross: 4822.5, expenses: 1304.05, net: 3518.45 },
       byCategory: [
         { category: 'Gasolina', amount: 520, percentage: 40 },
         { category: 'Alimentação', amount: 390, percentage: 30 },
@@ -193,17 +193,17 @@ export default function ReportsPage() {
             Visualize seus ganhos, gastos e tendências
           </p>
         </div>
-        
+
         <div className="flex flex-wrap gap-3">
-          <Button 
-            label="Exportar CSV" 
-            icon="pi pi-download" 
+          <Button
+            label="Exportar CSV"
+            icon="pi pi-download"
             className="p-button-outlined"
             onClick={exportToCSV}
           />
-          <Button 
-            label="Imprimir" 
-            icon="pi pi-print" 
+          <Button
+            label="Imprimir"
+            icon="pi pi-print"
             className="p-button-outlined"
           />
         </div>
@@ -213,7 +213,9 @@ export default function ReportsPage() {
       <Card>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Tipo de Relatório</label>
+            <label className="block text-sm font-medium mb-2">
+              Tipo de Relatório
+            </label>
             <Dropdown
               value={reportType}
               options={reportTypes}
@@ -221,7 +223,7 @@ export default function ReportsPage() {
               className="w-full"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-2">Ano</label>
             <Dropdown
@@ -231,7 +233,7 @@ export default function ReportsPage() {
               className="w-full"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium mb-2">Mês</label>
             <Dropdown
@@ -245,11 +247,11 @@ export default function ReportsPage() {
               className="w-full"
             />
           </div>
-          
+
           <div className="flex items-end">
-            <Button 
-              label="Gerar Relatório" 
-              icon="pi pi-refresh" 
+            <Button
+              label="Gerar Relatório"
+              icon="pi pi-refresh"
               className="btn-99 w-full"
             />
           </div>
@@ -257,16 +259,19 @@ export default function ReportsPage() {
       </Card>
 
       {/* Abas */}
-      <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
+      <TabView
+        activeIndex={activeTab}
+        onTabChange={(e) => setActiveTab(e.index)}
+      >
         <TabPanel header="Visão Geral">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Gráfico */}
             <Card title="Distribuição Visual">
               <div className="h-80">
-                <Chart 
-                  type={reportType === 'weekly' ? 'bar' : 'pie'} 
-                  data={chartData} 
-                  options={chartOptions} 
+                <Chart
+                  type={reportType === 'weekly' ? 'bar' : 'pie'}
+                  data={chartData}
+                  options={chartOptions}
                 />
               </div>
             </Card>
@@ -280,7 +285,9 @@ export default function ReportsPage() {
                     <div className="text-white text-3xl font-bold mt-2">
                       R$ {reportData.weekly.totals.net.toFixed(2)}
                     </div>
-                    <div className="text-white/80 text-sm mt-1">Lucro Líquido</div>
+                    <div className="text-white/80 text-sm mt-1">
+                      Lucro Líquido
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -309,8 +316,9 @@ export default function ReportsPage() {
                   <div>
                     <h4 className="font-bold mb-3">Melhor Dia da Semana</h4>
                     {(() => {
-                      const bestDay = reportData.weekly.entries.reduce((prev: any, current: any) => 
-                        prev.net > current.net ? prev : current
+                      const bestDay = reportData.weekly.entries.reduce(
+                        (prev: any, current: any) =>
+                          prev.net > current.net ? prev : current,
                       );
                       return (
                         <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded">
@@ -333,7 +341,9 @@ export default function ReportsPage() {
                     <div className="text-white text-3xl font-bold mt-2">
                       R$ {reportData.monthly.totals.net.toFixed(2)}
                     </div>
-                    <div className="text-white/80 text-sm mt-1">Lucro Líquido</div>
+                    <div className="text-white/80 text-sm mt-1">
+                      Lucro Líquido
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -355,20 +365,24 @@ export default function ReportsPage() {
 
                   <div>
                     <h4 className="font-bold mb-3">Distribuição de Gastos</h4>
-                    {reportData.monthly.byCategory.map((cat: any, index: number) => (
-                      <div key={index} className="mb-3">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>{cat.category}</span>
-                          <span>R$ {cat.amount.toFixed(2)} ({cat.percentage}%)</span>
+                    {reportData.monthly.byCategory.map(
+                      (cat: any, index: number) => (
+                        <div key={index} className="mb-3">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>{cat.category}</span>
+                            <span>
+                              R$ {cat.amount.toFixed(2)} ({cat.percentage}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-500 h-2 rounded-full"
+                              style={{ width: `${cat.percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full" 
-                            style={{ width: `${cat.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 </div>
               )}
@@ -379,72 +393,104 @@ export default function ReportsPage() {
         <TabPanel header="Tabela Detalhada">
           <Card>
             {reportType === 'weekly' ? (
-              <DataTable value={reportData.weekly.entries} className="p-datatable-sm">
+              <DataTable
+                value={reportData.weekly.entries}
+                className="p-datatable-sm"
+              >
                 <Column field="day" header="Dia" sortable />
-                <Column 
-                  field="gross" 
-                  header="Bruto (R$)" 
-                  sortable 
+                <Column
+                  field="gross"
+                  header="Bruto (R$)"
+                  sortable
                   body={(rowData) => rowData.gross.toFixed(2)}
                 />
-                <Column 
-                  field="expenses" 
-                  header="Gastos (R$)" 
-                  sortable 
+                <Column
+                  field="expenses"
+                  header="Gastos (R$)"
+                  sortable
                   body={(rowData) => rowData.expenses.toFixed(2)}
                 />
-                <Column 
-                  field="net" 
-                  header="Líquido (R$)" 
-                  sortable 
+                <Column
+                  field="net"
+                  header="Líquido (R$)"
+                  sortable
                   body={(rowData) => (
-                    <span className={rowData.net >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                    <span
+                      className={
+                        rowData.net >= 0
+                          ? 'text-green-600 font-bold'
+                          : 'text-red-600 font-bold'
+                      }
+                    >
                       {rowData.net.toFixed(2)}
                     </span>
                   )}
                 />
-                <Column 
-                  header="Margem" 
+                <Column
+                  header="Margem"
                   body={(rowData) => {
-                    const margin = ((rowData.net / rowData.gross) * 100).toFixed(1);
+                    const margin = (
+                      (rowData.net / rowData.gross) *
+                      100
+                    ).toFixed(1);
                     return `${margin}%`;
                   }}
                 />
               </DataTable>
             ) : (
-              <DataTable value={reportData.monthly.byWeek} className="p-datatable-sm">
+              <DataTable
+                value={reportData.monthly.byWeek}
+                className="p-datatable-sm"
+              >
                 <Column field="week" header="Semana" sortable />
-                <Column 
-                  field="gross" 
-                  header="Bruto (R$)" 
-                  sortable 
+                <Column
+                  field="gross"
+                  header="Bruto (R$)"
+                  sortable
                   body={(rowData) => rowData.gross.toFixed(2)}
                 />
-                <Column 
-                  field="expenses" 
-                  header="Gastos (R$)" 
-                  sortable 
+                <Column
+                  field="expenses"
+                  header="Gastos (R$)"
+                  sortable
                   body={(rowData) => rowData.expenses.toFixed(2)}
                 />
-                <Column 
-                  field="net" 
-                  header="Líquido (R$)" 
-                  sortable 
+                <Column
+                  field="net"
+                  header="Líquido (R$)"
+                  sortable
                   body={(rowData) => (
-                    <span className={rowData.net >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                    <span
+                      className={
+                        rowData.net >= 0
+                          ? 'text-green-600 font-bold'
+                          : 'text-red-600 font-bold'
+                      }
+                    >
                       {rowData.net.toFixed(2)}
                     </span>
                   )}
                 />
-                <Column 
-                  header="Evolução" 
+                <Column
+                  header="Evolução"
                   body={(rowData, options) => {
-                    const prevWeek = reportData.monthly.byWeek[options.rowIndex - 1];
+                    const prevWeek =
+                      reportData.monthly.byWeek[options.rowIndex - 1];
                     if (!prevWeek) return '-';
-                    const change = ((rowData.net - prevWeek.net) / prevWeek.net * 100).toFixed(1);
+                    const change = (
+                      ((rowData.net - prevWeek.net) / prevWeek.net) *
+                      100
+                    ).toFixed(1);
                     return (
-                      <span className={parseFloat(change) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {parseFloat(change) >= 0 ? '+' : ''}{change}%
+                      <span
+                        className={
+                          parseFloat(change) >= 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }
+                      >
+                        {parseFloat(change) >= 0 ? '+' : ''}
+                        {change}%
                       </span>
                     );
                   }}
@@ -458,7 +504,9 @@ export default function ReportsPage() {
           <Card>
             <div className="text-center py-8">
               <i className="pi pi-chart-line text-4xl text-gray-300 mb-3"></i>
-              <p className="text-gray-500">Comparativo entre meses em desenvolvimento</p>
+              <p className="text-gray-500">
+                Comparativo entre meses em desenvolvimento
+              </p>
               <p className="text-sm text-gray-400 mt-2">
                 Em breve você poderá comparar seu desempenho mês a mês
               </p>

@@ -1,4 +1,4 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
@@ -16,7 +16,7 @@ const config: Config = {
         '99-orange': '#FF9800',
         'pop-yellow': '#FFD700',
         'pop-orange': '#FF8C00',
-        
+
         // Cores personalizadas do app
         primary: {
           DEFAULT: '#FFC107', // Amarelo 99
@@ -38,5 +38,5 @@ const config: Config = {
     },
   },
   plugins: [],
-}
-export default config
+};
+export default config;

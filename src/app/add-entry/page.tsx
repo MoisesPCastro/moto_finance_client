@@ -10,19 +10,18 @@ import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Divider } from 'primereact/divider';
-import { Toast } from 'primereact/toast';
 import { ProgressSpinner } from 'primereact/progressspinner';
-import { useRef } from 'react';
 import { apiClient } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ToastProvider';
 
 export default function AddEntryPage() {
   const router = useRouter();
-  const toast = useRef<Toast>(null);
-  
+  const toast = useToast();
+  const { currentUser, users, setCurrentUser } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [userId, setUserId] = useState<string>('');
-  const [users, setUsers] = useState<any[]>([]);
 
   // Estados do formulário
   const [formData, setFormData] = useState({
@@ -31,7 +30,7 @@ export default function AddEntryPage() {
     grossAmount: 0,
     expenses: 0,
     description: '',
-    userId: '',
+    userId: currentUser?.id || '',
   });
 
   // Dias da semana
@@ -45,45 +44,45 @@ export default function AddEntryPage() {
     { label: 'Domingo', value: 'domingo' },
   ];
 
-  // Calcular líquido automaticamente
   const netAmount = formData.grossAmount - formData.expenses;
 
-  // Buscar usuários ao carregar a página
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      // Em produção, você pegaria do localStorage ou contexto
-      const response = await apiClient.getUsers();
-      setUsers(response.data);
-      
-      // Se tiver usuários, seleciona o primeiro
-      if (response.data.length > 0) {
-        setUserId(response.data[0].id);
-        setFormData(prev => ({ ...prev, userId: response.data[0].id }));
-      }
-    } catch (error) {
-      console.error('Erro ao carregar usuários:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Quando a data muda, atualiza o dia da semana
   const handleDateChange = (date: Date) => {
-    const days = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-    const dayName = days[date.getDay()];
-    
+    const daysMap = [
+      'domingo',
+      'segunda',
+      'terça',
+      'quarta',
+      'quinta',
+      'sexta',
+      'sábado'
+    ];
+
+    const dayIndex = date.getDay();
+    const dayOfWeekPortuguese = daysMap[dayIndex];
+
     setFormData({
       ...formData,
       date,
-      dayOfWeek: dayName,
+      dayOfWeek: dayOfWeekPortuguese,
     });
   };
 
+  // Adicione esta função (opcional, para exibir bonito):
+  const formatDayForDisplay = (day: string) => {
+    if (!day) return '';
+
+    const displayMap: Record<string, string> = {
+      'segunda': 'Segunda-feira',
+      'terça': 'Terça-feira',
+      'quarta': 'Quarta-feira',
+      'quinta': 'Quinta-feira',
+      'sexta': 'Sexta-feira',
+      'sábado': 'Sábado',
+      'domingo': 'Domingo'
+    };
+
+    return displayMap[day] || day.charAt(0).toUpperCase() + day.slice(1);
+  };
   // Atualizar campo do formulário
   const handleInputChange = (field: string, value: any) => {
     setFormData({
@@ -95,24 +94,14 @@ export default function AddEntryPage() {
   // Salvar registro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.userId) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Atenção',
-        detail: 'Selecione um usuário',
-        life: 3000,
-      });
+      toast.showWarning('Selecione um usuário');
       return;
     }
 
     if (formData.grossAmount <= 0) {
-      toast.current?.show({
-        severity: 'warn',
-        summary: 'Atenção',
-        detail: 'Informe o valor bruto',
-        life: 3000,
-      });
+      toast.showWarning('Informe o valor bruto');
       return;
     }
 
@@ -128,38 +117,18 @@ export default function AddEntryPage() {
         userId: formData.userId,
       };
 
-      await apiClient.createEntry(entryData);
-      
-      toast.current?.show({
-        severity: 'success',
-        summary: 'Sucesso!',
-        detail: 'Registro salvo com sucesso',
-        life: 3000,
-      });
+      const response = await apiClient.createEntry(entryData);
 
-      // Limpar formulário
-      setFormData({
-        date: new Date(),
-        dayOfWeek: '',
-        grossAmount: 0,
-        expenses: 0,
-        description: '',
-        userId: formData.userId, // Mantém o usuário
-      });
+      toast.showSuccess('Registro salvo com sucesso!');
 
-      // Redirecionar após 2 segundos
+      // Redirecionar após 1 segundo
       setTimeout(() => {
         router.push('/');
-      }, 2000);
+      }, 1000);
 
     } catch (error: any) {
       console.error('Erro ao salvar:', error);
-      toast.current?.show({
-        severity: 'error',
-        summary: 'Erro',
-        detail: error.response?.data?.message || 'Erro ao salvar registro',
-        life: 5000,
-      });
+      toast.showError(error.response?.data?.message || 'Erro ao salvar registro');
     } finally {
       setSaving(false);
     }
@@ -182,6 +151,13 @@ export default function AddEntryPage() {
     );
   };
 
+  // Carregar dados iniciais
+  useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({ ...prev, userId: currentUser.id }));
+    }
+  }, [currentUser]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
@@ -190,14 +166,27 @@ export default function AddEntryPage() {
     );
   }
 
+  const formatCurrency = (value: number | null) => {
+    if (value === null || value === undefined) return '';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  // Função para converter string para número
+  const parseCurrency = (value: string) => {
+    // Remove tudo que não é número, ponto ou vírgula
+    const cleanValue = value.replace(/[^\d,.-]/g, '').replace(',', '.');
+    return parseFloat(cleanValue) || 0;
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
-      <Toast ref={toast} />
-      
       <div className="mb-6">
-        <Button 
-          label="Voltar para Dashboard" 
-          icon="pi pi-arrow-left" 
+        <Button
+          label="Voltar para Dashboard"
+          icon="pi pi-arrow-left"
           className="p-button-text"
           onClick={() => router.push('/')}
         />
@@ -205,7 +194,7 @@ export default function AddEntryPage() {
           Adicionar Dia de Trabalho
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Registre seus ganhos e gastos do dia
+          Some TODOS os ganhos (Uber + 99/Pop juntos)
         </p>
       </div>
 
@@ -215,33 +204,33 @@ export default function AddEntryPage() {
           <Card>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Seletor de Usuário */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="pi pi-user mr-2"></i>
-                  Selecione o Motoboy
-                </label>
-                <Dropdown
-                  value={formData.userId}
-                  options={users}
-                  onChange={(e) => {
-                    setUserId(e.value);
-                    handleInputChange('userId', e.value);
-                  }}
-                  optionLabel="name"
-                  optionValue="id"
-                  itemTemplate={userItemTemplate}
-                  placeholder="Selecione um usuário"
-                  className="w-full"
-                  disabled={users.length === 0}
-                />
-                {users.length === 0 && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Nenhum usuário cadastrado. Crie um usuário primeiro.
-                  </p>
-                )}
-              </div>
-
-              <Divider />
+              {users.length > 1 && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      <i className="pi pi-user mr-2"></i>
+                      Selecione o Motoboy
+                    </label>
+                    <Dropdown
+                      value={formData.userId}
+                      options={users}
+                      onChange={(e) => {
+                        const selectedUser = users.find(u => u.id === e.value);
+                        if (selectedUser) {
+                          setCurrentUser(selectedUser);
+                          handleInputChange('userId', e.value);
+                        }
+                      }}
+                      optionLabel="name"
+                      optionValue="id"
+                      itemTemplate={userItemTemplate}
+                      placeholder="Selecione um usuário"
+                      className="w-full"
+                    />
+                  </div>
+                  <Divider />
+                </>
+              )}
 
               {/* Data e Dia da Semana */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -264,12 +253,15 @@ export default function AddEntryPage() {
                     <i className="pi pi-sun mr-2"></i>
                     Dia da Semana
                   </label>
+
                   <Dropdown
                     value={formData.dayOfWeek}
                     options={daysOfWeek}
                     onChange={(e) => handleInputChange('dayOfWeek', e.value)}
-                    placeholder="Selecione o dia"
+                    optionLabel="label"
+                    optionValue="value"
                     className="w-full"
+                    placeholder="Selecione o dia da semana"
                   />
                 </div>
               </div>
@@ -279,20 +271,21 @@ export default function AddEntryPage() {
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     <i className="pi pi-money-bill mr-2 text-green-500"></i>
-                    Ganho Bruto (R$)
+                    Ganho Bruto Total (R$)
                   </label>
                   <InputNumber
                     value={formData.grossAmount}
-                    onValueChange={(e) => handleInputChange('grossAmount', e.value)}
-                    mode="currency"
-                    currency="BRL"
-                    locale="pt-BR"
+                    onValueChange={(e) => handleInputChange('grossAmount', e.value || 0)}
                     className="w-full"
                     min={0}
                     max={9999}
+                    placeholder="0,00"
+                    // Remove mode="currency" e usa inputMode
+                    inputMode="decimal"
+                    useGrouping={false} // Não agrupa milhares
                   />
                   <small className="text-gray-500">
-                    Valor total recebido (Uber + 99 Pop)
+                    Soma de TODOS os ganhos (Uber + 99 + Pop)
                   </small>
                 </div>
 
@@ -303,13 +296,13 @@ export default function AddEntryPage() {
                   </label>
                   <InputNumber
                     value={formData.expenses}
-                    onValueChange={(e) => handleInputChange('expenses', e.value)}
-                    mode="currency"
-                    currency="BRL"
-                    locale="pt-BR"
+                    onValueChange={(e) => handleInputChange('expenses', e.value || 0)}
                     className="w-full"
                     min={0}
-                    max={9999}
+                    max={99999}
+                    placeholder="0,00"
+                    inputMode="decimal"
+                    useGrouping={false}
                   />
                   <small className="text-gray-500">
                     Gasolina, alimentação, manutenção, etc.
@@ -328,7 +321,7 @@ export default function AddEntryPage() {
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={3}
                   className="w-full"
-                  placeholder="Ex: Trabalhei na zona sul, choveu à tarde, muitos pedidos de 99..."
+                  placeholder="Ex: Boa demanda na 99 hoje, muita corrida curta no Uber, choveu à tarde..."
                 />
               </div>
 
@@ -378,7 +371,7 @@ export default function AddEntryPage() {
                   {formData.date.toLocaleDateString('pt-BR')}
                 </div>
                 <div className="text-white/80 text-sm mt-1">
-                  {formData.dayOfWeek ? formData.dayOfWeek.charAt(0).toUpperCase() + formData.dayOfWeek.slice(1) : 'Selecione um dia'}
+                  {formData.dayOfWeek ? formData.dayOfWeek.charAt(0).toUpperCase() + formData.dayOfWeek.slice(1) : '-'}
                 </div>
               </div>
 
@@ -404,20 +397,17 @@ export default function AddEntryPage() {
                   </span>
                 </div>
 
-                <div className={`flex justify-between items-center p-3 rounded ${
-                  netAmount >= 0 
-                    ? 'bg-blue-50 dark:bg-blue-900/20' 
-                    : 'bg-gray-50 dark:bg-gray-800'
-                }`}>
+                <div className={`flex justify-between items-center p-3 rounded ${netAmount >= 0
+                  ? 'bg-blue-50 dark:bg-blue-900/20'
+                  : 'bg-gray-50 dark:bg-gray-800'
+                  }`}>
                   <div className="flex items-center gap-2">
-                    <i className={`pi pi-dollar ${
-                      netAmount >= 0 ? 'text-blue-500' : 'text-gray-500'
-                    }`}></i>
+                    <i className={`pi pi-dollar ${netAmount >= 0 ? 'text-blue-500' : 'text-gray-500'
+                      }`}></i>
                     <span className="font-medium">Lucro Líquido</span>
                   </div>
-                  <span className={`font-bold text-lg ${
-                    netAmount >= 0 ? 'text-blue-600' : 'text-gray-600'
-                  }`}>
+                  <span className={`font-bold text-lg ${netAmount >= 0 ? 'text-blue-600' : 'text-gray-600'
+                    }`}>
                     R$ {netAmount.toFixed(2)}
                   </span>
                 </div>
@@ -432,11 +422,11 @@ export default function AddEntryPage() {
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                   <li className="flex items-start gap-2">
                     <i className="pi pi-check-circle text-green-500 mt-0.5"></i>
-                    <span>Anote todos os gastos, mesmo pequenos</span>
+                    <span>Some TODOS os ganhos (Uber + 99/Pop juntos)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <i className="pi pi-check-circle text-green-500 mt-0.5"></i>
-                    <span>Separe Uber, 99 e Pop se possível</span>
+                    <span>Anote todos os gastos, mesmo pequenos</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <i className="pi pi-check-circle text-green-500 mt-0.5"></i>

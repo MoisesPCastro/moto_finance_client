@@ -43,15 +43,15 @@ export default function Header() {
 
   const end = (
     <div className="flex gap-2">
-      <Button 
-        label="Uber" 
-        icon="pi pi-car" 
+      <Button
+        label="Uber"
+        icon="pi pi-car"
         className="btn-uber text-sm"
         severity="secondary"
       />
-      <Button 
-        label="99/Pop" 
-        icon="pi pi-map-marker" 
+      <Button
+        label="99/Pop"
+        icon="pi pi-map-marker"
         className="btn-99 text-sm"
       />
     </div>
@@ -59,9 +59,9 @@ export default function Header() {
 
   return (
     <div className="sticky top-0 z-50 shadow-md bg-white dark:bg-gray-900">
-      <Menubar 
-        model={items} 
-        start={start} 
+      <Menubar
+        model={items}
+        start={start}
         end={end}
         className="border-0 rounded-none"
       />
