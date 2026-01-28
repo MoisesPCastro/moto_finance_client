@@ -42,18 +42,14 @@ export default function Header() {
   );
 
   const end = (
-    <div className="flex gap-2">
-      <Button
-        label="Uber"
-        icon="pi pi-car"
-        className="btn-uber text-sm"
-        severity="secondary"
-      />
-      <Button
-        label="99/Pop"
-        icon="pi pi-map-marker"
-        className="btn-99 text-sm"
-      />
+    <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+      <i className="pi pi-calendar text-gray-600 dark:text-gray-300"></i>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        {new Date().toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: 'short',
+        })}
+      </span>
     </div>
   );
 

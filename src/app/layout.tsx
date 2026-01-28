@@ -5,7 +5,7 @@ import { Providers } from './providers';
 import Header from '@/components/Header';
 
 const inter = Inter({ subsets: ['latin'] });
-
+//
 export const metadata: Metadata = {
   title: 'Moto Finance',
   description: 'Controle seus ganhos do dia',

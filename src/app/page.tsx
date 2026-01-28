@@ -13,8 +13,10 @@ import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ToastProvider';
 import AppsBadge from '@/components/AppsBadge';
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
+  const router = useRouter();
   const { currentUser, users, setCurrentUser } = useAuth();
   const toast = useToast();
 
@@ -22,13 +24,8 @@ export default function Dashboard() {
   const [viewType, setViewType] = useState('week');
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<any[]>([]);
-  const [stats, setStats] = useState({
-    totalGross: 0,
-    totalExpenses: 0,
-    totalNet: 0,
-    avgDaily: 0,
-  });
   const [userStats, setUserStats] = useState<any>(null);
+  const [monthlyGoal, setMonthlyGoal] = useState<number>(4000); // Pode vir da API futuramente
 
   // Carregar dados
   useEffect(() => {
@@ -65,26 +62,27 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      // Tenta carregar estatísticas do usuário
-      try {
-        const statsResponse = await apiClient.getUserStats(currentUser.id);
-        setUserStats(statsResponse.data);
-      } catch (statsError) {
-        console.log('Não foi possível carregar stats:', statsError);
-        // Continua mesmo sem stats
+      // Carregar dados em paralelo
+      const [statsResponse, recentResponse] = await Promise.allSettled([
+        apiClient.getUserStats(currentUser.id),
+        apiClient.getRecentEntries(currentUser.id, 5),
+      ]);
+
+      // Processa estatísticas
+      if (statsResponse.status === 'fulfilled') {
+        setUserStats(statsResponse.value.data);
+      } else {
+        console.log('Não foi possível carregar stats:', statsResponse.reason);
       }
 
-      // Carregar últimos registros
-      try {
-        const recentResponse = await apiClient.getRecentEntries(
-          currentUser.id,
-          5,
-        );
-        setEntries(recentResponse.data || []);
+      // Processa últimos registros
+      if (recentResponse.status === 'fulfilled') {
+        const recentEntries = recentResponse.value.data || [];
+        setEntries(recentEntries);
 
-        // Calcular totais
-        if (recentResponse.data && recentResponse.data.length > 0) {
-          const totals = recentResponse.data.reduce(
+        // Se não tem stats da API mas tem registros, calcula localmente
+        if (statsResponse.status !== 'fulfilled' && recentEntries.length > 0) {
+          const totals = recentEntries.reduce(
             (acc, entry) => {
               acc.totalGross += entry.grossAmount;
               acc.totalExpenses += entry.expenses;
@@ -94,13 +92,22 @@ export default function Dashboard() {
             { totalGross: 0, totalExpenses: 0, totalNet: 0 },
           );
 
-          setStats({
-            ...totals,
-            avgDaily: totals.totalNet / recentResponse.data.length,
+          setUserStats({
+            totals: {
+              grossAmount: totals.totalGross,
+              expenses: totals.totalExpenses,
+              netAmount: totals.totalNet,
+              entries: recentEntries.length,
+            },
+            averages: {
+              grossAmount: totals.totalGross / recentEntries.length,
+              expenses: totals.totalExpenses / recentEntries.length,
+              netAmount: totals.totalNet / recentEntries.length,
+            },
           });
         }
-      } catch (entriesError) {
-        console.log('Não foi possível carregar registros:', entriesError);
+      } else {
+        console.log('Não foi possível carregar registros:', recentResponse.reason);
         setEntries([]);
       }
     } catch (error: any) {
@@ -117,10 +124,10 @@ export default function Dashboard() {
     { label: 'Personalizado', value: 'custom' },
   ];
 
-  // Calcular progresso da meta (exemplo: meta de R$ 2500/mês)
-  const monthlyGoal = 4000;
+  // Calcular progresso da meta
   const currentProgress = userStats?.totals?.netAmount || 0;
   const goalPercentage = Math.min((currentProgress / monthlyGoal) * 100, 100);
+  const goalPercentageFormatted = parseFloat(goalPercentage.toFixed(1));
   const daysRemaining =
     new Date(
       selectedMonth.getFullYear(),
@@ -256,7 +263,7 @@ export default function Dashboard() {
             label="Adicionar Dia"
             icon="pi pi-plus"
             className="btn-99"
-            onClick={() => (window.location.href = '/add-entry')}
+            onClick={() => router.push('/add-entry')}
           />
         </div>
       </div>
@@ -268,7 +275,7 @@ export default function Dashboard() {
           value={userStats?.totals?.grossAmount || 0}
           icon={<i className="pi pi-money-bill text-xl"></i>}
           color="primary"
-          trend={`${entries.length} dias registrados`}
+          trend={`${userStats?.totals?.entries || 0} dias registrados`}
         />
 
         <StatsCard
@@ -289,10 +296,10 @@ export default function Dashboard() {
 
         <StatsCard
           title="Meta Mensal"
-          value={monthlyGoal.toFixed(2)}
+          value={monthlyGoal}
           icon={<i className="pi pi-flag text-xl"></i>}
           color="info"
-          trend={`${goalPercentage.toFixed(1)}% concluído`}
+          trend={`${goalPercentageFormatted.toFixed(1)}% concluído`}
         />
       </div>
 
@@ -309,7 +316,7 @@ export default function Dashboard() {
               R$ {currentProgress.toFixed(2)} ({goalPercentage.toFixed(1)}%)
             </span>
           </div>
-          <ProgressBar value={goalPercentage} className="h-3" />
+          <ProgressBar value={goalPercentageFormatted || goalPercentage} className="h-3" />
           <div className="flex justify-between text-xs text-gray-500">
             <span>
               Faltam: R$ {Math.max(0, monthlyGoal - currentProgress).toFixed(2)}
@@ -318,6 +325,53 @@ export default function Dashboard() {
           </div>
         </div>
       </Card>
+
+      {/* Destaques */}
+      <Card title="Destaques">
+        <div className="space-y-4">
+          {userStats?.bestDay ? (
+            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <i className="pi pi-trophy text-green-500"></i>
+                  <span className="font-bold">Melhor Dia</span>
+                </div>
+                <span className="text-green-600 font-bold">
+                  +R$ {userStats.bestDay.netAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {new Date(userStats.bestDay.date).toLocaleDateString('pt-BR')}{' '}
+                • {userStats.bestDay.dayOfWeek}
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-center text-gray-500">
+                <i className="pi pi-chart-line text-xl mb-2"></i>
+                <p>Adicione registros para ver seus destaques</p>
+              </div>
+            </div>
+          )}
+
+          {/* Estatística de média */}
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <i className="pi pi-chart-bar text-blue-500"></i>
+                <span className="font-bold">Média Diária</span>
+              </div>
+              <span className="text-blue-600 font-bold">
+                R$ {(userStats?.averages?.netAmount || 0).toFixed(2)}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Baseado em {userStats?.totals?.entries || 0} dias trabalhados
+            </div>
+          </div>
+        </div>
+      </Card>
+
 
       {/* Últimos Dias de Trabalho */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -346,59 +400,12 @@ export default function Dashboard() {
                   label="Adicionar primeiro registro"
                   icon="pi pi-plus"
                   className="btn-99"
-                  onClick={() => (window.location.href = '/add-entry')}
+                  onClick={() => router.push('/add-entry')}
                 />
               </div>
             )}
           </div>
         </Card>
-
-        {/* Destaques */}
-        <Card title="Destaques">
-          <div className="space-y-4">
-            {userStats?.bestDay ? (
-              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <i className="pi pi-trophy text-green-500"></i>
-                    <span className="font-bold">Melhor Dia</span>
-                  </div>
-                  <span className="text-green-600 font-bold">
-                    +R$ {userStats.bestDay.netAmount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {new Date(userStats.bestDay.date).toLocaleDateString('pt-BR')}{' '}
-                  • {userStats.bestDay.dayOfWeek}
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="text-center text-gray-500">
-                  <i className="pi pi-chart-line text-xl mb-2"></i>
-                  <p>Adicione registros para ver seus destaques</p>
-                </div>
-              </div>
-            )}
-
-            {/* Estatística de média */}
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <i className="pi pi-chart-bar text-blue-500"></i>
-                  <span className="font-bold">Média Diária</span>
-                </div>
-                <span className="text-blue-600 font-bold">
-                  R$ {(userStats?.averages?.netAmount || 0).toFixed(2)}
-                </span>
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Baseado em {userStats?.totals?.entries || 0} dias trabalhados
-              </div>
-            </div>
-          </div>
-        </Card>
-
         {/* Dicas Rápidas */}
         <Card title="Dicas">
           <div className="space-y-3">

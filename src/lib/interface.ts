@@ -10,6 +10,7 @@ export interface IEntry {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  category?: string;
 }
 
 export interface IUser {
