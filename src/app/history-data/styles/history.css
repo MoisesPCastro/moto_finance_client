@@ -1,0 +1,40 @@
+/* styles/history.css */
+.history-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.day-details-modal .p-dialog-content {
+  padding: 0 !important;
+}
+
+/* Animações para os cards */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.hover\:shadow-4:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+/* Estilo para tabela */
+.p-datatable-sm .p-datatable-thead > tr > th,
+.p-datatable-sm .p-datatable-tbody > tr > td {
+  padding: 0.5rem 0.75rem;
+}
+
+/* Scrollbar personalizado */
+.p-scrollpanel .p-scrollpanel-bar {
+  background-color: var(--primary-color);
+  opacity: 0.3;
+  transition: background-color 0.2s;
+}
+
+.p-scrollpanel .p-scrollpanel-bar:hover {
+  background-color: var(--primary-color);
+  opacity: 0.5;
+}

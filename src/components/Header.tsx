@@ -23,11 +23,11 @@ export default function Header() {
       icon: 'pi pi-chart-bar',
       command: () => router.push('/reports'),
     },
-    // {
-    //   label: 'Histórico',
-    //   icon: 'pi pi-history',
-    //   command: () => router.push('/history'),
-    // },
+    {
+      label: 'Histórico',
+      icon: 'pi pi-history',
+      command: () => router.push('/history-data'),
+    },
   ];
 
   const start = (

@@ -86,7 +86,6 @@ export default function Dashboard() {
       const today = new Date();
 
       if (filterType === 'week') {
-        // Esta semana (segunda a domingo)
         const dayOfWeek = today.getDay(); // 0 = domingo, 1 = segunda, etc.
         const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Ajusta para começar na segunda
 
@@ -97,15 +96,10 @@ export default function Dashboard() {
         endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
         endDate.setHours(23, 59, 59, 999);
-
-        console.log('📅 Filtro SEMANA:', { startDate, endDate });
       } else {
-        // Este mês
         startDate = new Date(filterDate.getFullYear(), filterDate.getMonth(), 1);
         endDate = new Date(filterDate.getFullYear(), filterDate.getMonth() + 1, 0);
         endDate.setHours(23, 59, 59, 999);
-
-        console.log('📅 Filtro MÊS:', { startDate, endDate });
       }
 
       const formatDate = (date: Date) => date.toISOString().split('T')[0];
@@ -119,7 +113,6 @@ export default function Dashboard() {
       ]);
 
       if (statsResponse.status === 'fulfilled') {
-        console.log('✅ Stats filtrados:', statsResponse.value.data);
         setUserStats(statsResponse.value.data);
       } else {
         console.log('❌ Erro ao carregar stats filtrados:', statsResponse.reason);
@@ -143,7 +136,6 @@ export default function Dashboard() {
           return entryDate >= startDate && entryDate <= endDate;
         });
 
-        console.log('✅ Entries filtradas:', filteredEntries);
         setEntries(filteredEntries);
       } else {
         console.log('❌ Erro ao carregar entradas:', entriesResponse.reason);

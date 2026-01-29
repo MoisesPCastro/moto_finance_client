@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { IEntry, IUser, IWeeklySummary } from './interface';
+import { IDayDetails, IDaySummary, IEntry, IUser, IWeeklySummary } from './interface';
+import { isValidDateString } from '../utils/dates';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN;
@@ -13,7 +14,6 @@ const api = axios.create({
 });
 
 export const apiClient = {
-  // Entries
   createEntry: (data: Omit<IEntry, 'id' | 'createdAt' | 'updatedAt' | 'netAmount'>) =>
     api.post<IEntry>('/entries', data),
 
@@ -28,7 +28,6 @@ export const apiClient = {
 
   deleteEntry: (id: string) => api.delete(`/entries/${id}`),
 
-  // Reports
   getWeeklySummary: (userId: string, start: string, end: string) =>
     api.get<IWeeklySummary>('/entries/reports/weekly', {
       params: { userId, start, end },
@@ -46,7 +45,6 @@ export const apiClient = {
       params: { limit },
     }),
 
-  // Users
   createUser: (data: { email: string; name: string; password: string }) =>
     api.post<IUser>('/users', data),
 
@@ -58,6 +56,26 @@ export const apiClient = {
 
   getUserStatsFiltered: (userId: string, params: { startDate?: string; endDate?: string }) =>
     api.get<any>(`/entries/stats/${userId}/filtered`, { params }),
+
+  getDayDetails: (date: string, userId?: string) => {
+    if (!isValidDateString(date)) {
+      throw new Error(`Data inválida: ${date}. Use o formato YYYY-MM-DD`);
+    }
+
+    return api.get<IDayDetails>('/entries/day/details', {
+      params: { date, userId },
+    });
+  },
+
+  getRecentDaysSummary: (days: number = 7, userId?: string) => {
+    if (days < 1 || days > 365) {
+      throw new Error('Número de dias deve estar entre 1 e 365');
+    }
+
+    return api.get<IDaySummary[]>('/entries/recent/summary', {
+      params: { days, userId },
+    });
+  },
 };
 
 export default apiClient;
