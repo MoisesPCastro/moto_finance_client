@@ -1,4 +1,3 @@
-// Tipos
 export interface IEntry {
   id: string;
   date: string;
@@ -50,4 +49,31 @@ export interface IUserStats {
   };
   bestDay?: IEntry;
   worstDay?: IEntry;
+}
+
+export interface IDayDetails {
+  date: string;
+  totalGrossAmount: number;
+  totalExpenses: number;
+  totalNetAmount: number;
+  description?: string;
+  entriesCount: number;
+  entries: IEntry[];
+}
+
+export interface IDaySummary {
+  date: string;
+  dayOfWeek: string;
+  dayOfWeekShort: string;
+  totalGrossAmount: number;
+  totalExpenses: number;
+  totalNetAmount: number;
+  entriesCount: number;
+  hasEntries: boolean;
+  previewDescription?: string;
+}
+
+export interface IRecentDaysSummary {
+  days: IDaySummary[];
+  daysCount: number;
 }

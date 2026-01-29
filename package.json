@@ -12,12 +12,12 @@
     "lint:fix:ts": "eslint --config eslint.config.js '**/*.{ts,tsx}' --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky",
     "lint-staged": "lint-staged"
   },
   "dependencies": {
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "date-fns": "^4.1.0",
     "next": "^16.1.4",
     "primeflex": "^4.0.0",
     "primeicons": "^7.0.0",
@@ -43,7 +43,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-unused-imports": "^4.3.0",
     "globals": "^17.2.0",
-    "husky": "^9.1.7",
     "jiti": "^2.6.1",
     "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
