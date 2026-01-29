@@ -55,12 +55,7 @@ export default function Header() {
 
   return (
     <div className="sticky top-0 z-50 shadow-md bg-white dark:bg-gray-900">
-      <Menubar
-        model={items}
-        start={start}
-        end={end}
-        className="border-0 rounded-none"
-      />
+      <Menubar model={items} start={start} end={end} className="border-0 rounded-none" />
     </div>
   );
 }

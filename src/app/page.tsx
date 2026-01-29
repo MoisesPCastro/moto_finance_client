@@ -53,7 +53,26 @@ export default function Dashboard() {
     loadData();
   }, [currentUser, users]);
 
-  const loadDashboardData = async () => {
+  // Adicione este novo useEffect para reagir a mudanças no filtro
+  useEffect(() => {
+    if (currentUser) {
+      loadDashboardData();
+    }
+  }, [viewType, selectedMonth]); // Recarrega quando filtro ou mês mudar
+
+  // Função auxiliar para formatar datas
+  const formatDateForAPI = (date: Date) => {
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+
+  // Função para obter dia da semana em português
+  const getDayOfWeek = (dateString: string) => {
+    const days = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    const date = new Date(dateString);
+    return days[date.getDay()];
+  };
+
+  const loadDashboardData = async (filterType = viewType, filterDate = selectedMonth) => {
     if (!currentUser) {
       setLoading(false);
       return;
@@ -62,56 +81,77 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      // Carregar dados em paralelo
-      const [statsResponse, recentResponse] = await Promise.allSettled([
-        apiClient.getUserStats(currentUser.id),
-        apiClient.getRecentEntries(currentUser.id, 5),
-      ]);
+      // Calcula datas baseado no filtro
+      let startDate, endDate;
+      const today = new Date();
 
-      // Processa estatísticas
-      if (statsResponse.status === 'fulfilled') {
-        setUserStats(statsResponse.value.data);
+      if (filterType === 'week') {
+        // Esta semana (segunda a domingo)
+        const dayOfWeek = today.getDay(); // 0 = domingo, 1 = segunda, etc.
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Ajusta para começar na segunda
+
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() + diffToMonday);
+        startDate.setHours(0, 0, 0, 0);
+
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+
+        console.log('📅 Filtro SEMANA:', { startDate, endDate });
       } else {
-        console.log('Não foi possível carregar stats:', statsResponse.reason);
+        // Este mês
+        startDate = new Date(filterDate.getFullYear(), filterDate.getMonth(), 1);
+        endDate = new Date(filterDate.getFullYear(), filterDate.getMonth() + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        console.log('📅 Filtro MÊS:', { startDate, endDate });
       }
 
-      // Processa últimos registros
-      if (recentResponse.status === 'fulfilled') {
-        const recentEntries = recentResponse.value.data || [];
-        setEntries(recentEntries);
+      const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
-        // Se não tem stats da API mas tem registros, calcula localmente
-        if (statsResponse.status !== 'fulfilled' && recentEntries.length > 0) {
-          const totals = recentEntries.reduce(
-            (acc, entry) => {
-              acc.totalGross += entry.grossAmount;
-              acc.totalExpenses += entry.expenses;
-              acc.totalNet += entry.netAmount;
-              return acc;
-            },
-            { totalGross: 0, totalExpenses: 0, totalNet: 0 },
-          );
+      const [statsResponse, entriesResponse] = await Promise.allSettled([
+        apiClient.getUserStatsFiltered(currentUser.id, {
+          startDate: formatDate(startDate),
+          endDate: formatDate(endDate),
+        }),
+        apiClient.getRecentEntries(currentUser.id, 4),
+      ]);
 
-          setUserStats({
-            totals: {
-              grossAmount: totals.totalGross,
-              expenses: totals.totalExpenses,
-              netAmount: totals.totalNet,
-              entries: recentEntries.length,
-            },
-            averages: {
-              grossAmount: totals.totalGross / recentEntries.length,
-              expenses: totals.totalExpenses / recentEntries.length,
-              netAmount: totals.totalNet / recentEntries.length,
-            },
-          });
-        }
+      if (statsResponse.status === 'fulfilled') {
+        console.log('✅ Stats filtrados:', statsResponse.value.data);
+        setUserStats(statsResponse.value.data);
       } else {
-        console.log('Não foi possível carregar registros:', recentResponse.reason);
+        console.log('❌ Erro ao carregar stats filtrados:', statsResponse.reason);
+        toast.showError('Erro ao carregar estatísticas do período');
+
+        try {
+          const generalStats = await apiClient.getUserStats(currentUser.id);
+          setUserStats(generalStats.data);
+        } catch (fallbackError) {
+          console.log('❌ Fallback também falhou:', fallbackError);
+        }
+      }
+
+      // Processa entradas
+      if (entriesResponse.status === 'fulfilled') {
+        const allEntries = entriesResponse.value.data || [];
+
+        // Filtra entradas por data no frontend (para exibir na lista)
+        const filteredEntries = allEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return entryDate >= startDate && entryDate <= endDate;
+        });
+
+        console.log('✅ Entries filtradas:', filteredEntries);
+        setEntries(filteredEntries);
+      } else {
+        console.log('❌ Erro ao carregar entradas:', entriesResponse.reason);
+        toast.showError('Erro ao carregar registros');
         setEntries([]);
       }
     } catch (error: any) {
-      console.error('Erro ao carregar dashboard:', error);
+      console.error('❌ Erro geral no carregamento:', error);
       toast.showError('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
@@ -121,19 +161,17 @@ export default function Dashboard() {
   const viewOptions = [
     { label: 'Esta Semana', value: 'week' },
     { label: 'Este Mês', value: 'month' },
-    { label: 'Personalizado', value: 'custom' },
   ];
 
   // Calcular progresso da meta
   const currentProgress = userStats?.totals?.netAmount || 0;
   const goalPercentage = Math.min((currentProgress / monthlyGoal) * 100, 100);
   const goalPercentageFormatted = parseFloat(goalPercentage.toFixed(1));
-  const daysRemaining =
-    new Date(
-      selectedMonth.getFullYear(),
-      selectedMonth.getMonth() + 1,
-      0,
-    ).getDate() - selectedMonth.getDate();
+  const daysRemaining = Math.max(
+    0,
+    new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate() -
+      new Date().getDate()
+  );
 
   if (loading) {
     return (
@@ -151,12 +189,8 @@ export default function Dashboard() {
     return (
       <div className="text-center py-12">
         <i className="pi pi-user-plus text-5xl text-gray-300 mb-4"></i>
-        <h2 className="text-xl font-bold text-gray-700 mb-2">
-          Bem-vindo ao Moto Finance!
-        </h2>
-        <p className="text-gray-500 mb-6">
-          Crie seu primeiro usuário para começar
-        </p>
+        <h2 className="text-xl font-bold text-gray-700 mb-2">Bem-vindo ao Moto Finance!</h2>
+        <p className="text-gray-500 mb-6">Crie seu primeiro usuário para começar</p>
         <Button
           label="Criar Primeiro Usuário"
           icon="pi pi-user-plus"
@@ -190,17 +224,13 @@ export default function Dashboard() {
     return (
       <div className="text-center py-12">
         <i className="pi pi-user text-5xl text-gray-300 mb-4"></i>
-        <h2 className="text-xl font-bold text-gray-700 mb-2">
-          Selecione um usuário
-        </h2>
-        <p className="text-gray-500 mb-6">
-          Escolha um motoboy para ver o dashboard
-        </p>
+        <h2 className="text-xl font-bold text-gray-700 mb-2">Selecione um usuário</h2>
+        <p className="text-gray-500 mb-6">Escolha um motoboy para ver o dashboard</p>
         <Dropdown
           value={null}
           options={users}
-          onChange={(e) => {
-            const selected = users.find((u) => u.id === e.value);
+          onChange={e => {
+            const selected = users.find(u => u.id === e.value);
             if (selected) {
               setCurrentUser(selected);
             }
@@ -231,33 +261,44 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <AppsBadge />
-            <span className="text-sm text-gray-500">
-              • Todos os apps somados
-            </span>
+            <span className="text-sm text-gray-500">• Todos os apps somados</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
             Dashboard - {currentUser.name}
+            <span className="text-lg font-normal text-gray-500 ml-2">
+              (
+              {viewType === 'week'
+                ? 'Esta Semana'
+                : selectedMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              )
+            </span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Ganhos totais (Uber + 99/Pop) - Simples e direto
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Ganhos totais (Uber + 99/Pop)</p>
         </div>
 
         <div className="flex flex-wrap gap-3">
           <Dropdown
             value={viewType}
             options={viewOptions}
-            onChange={(e) => setViewType(e.value)}
+            onChange={e => {
+              setViewType(e.value);
+            }}
             className="w-full md:w-40"
           />
           <Calendar
             value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.value as Date)}
+            onChange={e => {
+              setSelectedMonth(e.value as Date);
+              if (viewType === 'month') {
+              }
+            }}
             view="month"
             dateFormat="mm/yy"
             monthNavigator
             yearNavigator
+            yearRange="2024:2026"
             className="w-full md:w-40"
+            disabled={viewType === 'week'} // Desabilita no modo semana
           />
           <Button
             label="Adicionar Dia"
@@ -268,7 +309,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total Bruto"
@@ -309,18 +349,14 @@ export default function Dashboard() {
       >
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">
-              Meta: R$ {monthlyGoal.toFixed(2)}
-            </span>
+            <span className="text-gray-600">Meta: R$ {monthlyGoal.toFixed(2)}</span>
             <span className="font-bold">
               R$ {currentProgress.toFixed(2)} ({goalPercentage.toFixed(1)}%)
             </span>
           </div>
           <ProgressBar value={goalPercentageFormatted || goalPercentage} className="h-3" />
           <div className="flex justify-between text-xs text-gray-500">
-            <span>
-              Faltam: R$ {Math.max(0, monthlyGoal - currentProgress).toFixed(2)}
-            </span>
+            <span>Faltam: R$ {Math.max(0, monthlyGoal - currentProgress).toFixed(2)}</span>
             <span>Dias restantes: {daysRemaining}</span>
           </div>
         </div>
@@ -341,8 +377,8 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                {new Date(userStats.bestDay.date).toLocaleDateString('pt-BR')}{' '}
-                • {userStats.bestDay.dayOfWeek}
+                {new Date(userStats.bestDay.date).toLocaleDateString('pt-BR')} •{' '}
+                {userStats.bestDay.dayOfWeek}
               </div>
             </div>
           ) : (
@@ -372,13 +408,15 @@ export default function Dashboard() {
         </div>
       </Card>
 
-
       {/* Últimos Dias de Trabalho */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Últimos Dias de Trabalho" className="lg:col-span-2">
+        <Card
+          title={`Últimos Dias de Trabalho ${viewType === 'week' ? '(Esta Semana)' : '(Este Mês)'}`}
+          className="lg:col-span-2"
+        >
           <div className="space-y-4">
             {entries.length > 0 ? (
-              entries.map((entry) => (
+              entries.map(entry => (
                 <DayCard
                   key={entry.id}
                   day={entry.dayOfWeek}
@@ -393,9 +431,7 @@ export default function Dashboard() {
               <div className="text-center py-8">
                 <i className="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
                 <p className="text-gray-500">Nenhum registro encontrado</p>
-                <p className="text-sm text-gray-400 mb-4">
-                  Adicione seu primeiro dia de trabalho
-                </p>
+                <p className="text-sm text-gray-400 mb-4">Adicione seu primeiro dia de trabalho</p>
                 <Button
                   label="Adicionar primeiro registro"
                   icon="pi pi-plus"

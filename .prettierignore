@@ -1,0 +1,13 @@
+node_modules
+.next
+out
+dist
+*.config.js
+*.config.ts
+coverage
+*.log
+.DS_Store
+.env*.local
+.next
+.next-server
+.next-static

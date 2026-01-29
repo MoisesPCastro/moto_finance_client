@@ -14,9 +14,8 @@ const api = axios.create({
 
 export const apiClient = {
   // Entries
-  createEntry: (
-    data: Omit<IEntry, 'id' | 'createdAt' | 'updatedAt' | 'netAmount'>,
-  ) => api.post<IEntry>('/entries', data),
+  createEntry: (data: Omit<IEntry, 'id' | 'createdAt' | 'updatedAt' | 'netAmount'>) =>
+    api.post<IEntry>('/entries', data),
 
   getEntries: (userId?: string) =>
     api.get<{ entries: IEntry[]; meta: any }>('/entries', {
@@ -25,8 +24,7 @@ export const apiClient = {
 
   getEntry: (id: string) => api.get<IEntry>(`/entries/${id}`),
 
-  updateEntry: (id: string, data: Partial<IEntry>) =>
-    api.patch<IEntry>(`/entries/${id}`, data),
+  updateEntry: (id: string, data: Partial<IEntry>) => api.patch<IEntry>(`/entries/${id}`, data),
 
   deleteEntry: (id: string) => api.delete(`/entries/${id}`),
 
@@ -41,8 +39,7 @@ export const apiClient = {
       params: { userId, year, month },
     }),
 
-  getUserStats: (userId: string) =>
-    api.get<any>(`/entries/reports/stats/${userId}`),
+  getUserStats: (userId: string) => api.get<any>(`/entries/reports/stats/${userId}`),
 
   getRecentEntries: (userId: string, limit: number = 7) =>
     api.get<IEntry[]>(`/entries/reports/recent/${userId}`, {
@@ -58,6 +55,9 @@ export const apiClient = {
   getUser: (id: string) => api.get<IUser>(`/users/${id}`),
 
   getUserByEmail: (email: string) => api.get<IUser>(`/users/email/${email}`),
+
+  getUserStatsFiltered: (userId: string, params: { startDate?: string; endDate?: string }) =>
+    api.get<any>(`/entries/stats/${userId}/filtered`, { params }),
 };
 
 export default apiClient;

@@ -23,7 +23,6 @@ export default function AddEntryPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Estados do formulário
   const [formData, setFormData] = useState({
     date: new Date(),
     dayOfWeek: '',
@@ -33,7 +32,6 @@ export default function AddEntryPage() {
     userId: currentUser?.id || '',
   });
 
-  // Dias da semana
   const daysOfWeek = [
     { label: 'Segunda-feira', value: 'segunda' },
     { label: 'Terça-feira', value: 'terça' },
@@ -47,15 +45,7 @@ export default function AddEntryPage() {
   const netAmount = formData.grossAmount - formData.expenses;
 
   const handleDateChange = (date: Date) => {
-    const daysMap = [
-      'domingo',
-      'segunda',
-      'terça',
-      'quarta',
-      'quinta',
-      'sexta',
-      'sábado'
-    ];
+    const daysMap = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
     const dayIndex = date.getDay();
     const dayOfWeekPortuguese = daysMap[dayIndex];
@@ -67,23 +57,21 @@ export default function AddEntryPage() {
     });
   };
 
-  // Adicione esta função (opcional, para exibir bonito):
   const formatDayForDisplay = (day: string) => {
     if (!day) return '';
 
     const displayMap: Record<string, string> = {
-      'segunda': 'Segunda-feira',
-      'terça': 'Terça-feira',
-      'quarta': 'Quarta-feira',
-      'quinta': 'Quinta-feira',
-      'sexta': 'Sexta-feira',
-      'sábado': 'Sábado',
-      'domingo': 'Domingo'
+      segunda: 'Segunda-feira',
+      terça: 'Terça-feira',
+      quarta: 'Quarta-feira',
+      quinta: 'Quinta-feira',
+      sexta: 'Sexta-feira',
+      sábado: 'Sábado',
+      domingo: 'Domingo',
     };
 
     return displayMap[day] || day.charAt(0).toUpperCase() + day.slice(1);
   };
-  // Atualizar campo do formulário
   const handleInputChange = (field: string, value: any) => {
     setFormData({
       ...formData,
@@ -91,7 +79,6 @@ export default function AddEntryPage() {
     });
   };
 
-  // Salvar registro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -107,7 +94,6 @@ export default function AddEntryPage() {
 
     setSaving(true);
     try {
-      // Formatar dados para a API
       const entryData = {
         date: formData.date.toISOString(),
         dayOfWeek: formData.dayOfWeek,
@@ -121,11 +107,9 @@ export default function AddEntryPage() {
 
       toast.showSuccess('Registro salvo com sucesso!');
 
-      // Redirecionar após 1 segundo
       setTimeout(() => {
         router.push('/');
       }, 1000);
-
     } catch (error: any) {
       console.error('Erro ao salvar:', error);
       toast.showError(error.response?.data?.message || 'Erro ao salvar registro');
@@ -134,14 +118,11 @@ export default function AddEntryPage() {
     }
   };
 
-  // Template de item de usuário no dropdown
   const userItemTemplate = (option: any) => {
     return (
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#FFC107] to-black flex items-center justify-center">
-          <span className="text-white font-bold text-xs">
-            {option.name.charAt(0)}
-          </span>
+          <span className="text-white font-bold text-xs">{option.name.charAt(0)}</span>
         </div>
         <div>
           <div className="font-medium">{option.name}</div>
@@ -151,7 +132,6 @@ export default function AddEntryPage() {
     );
   };
 
-  // Carregar dados iniciais
   useEffect(() => {
     if (currentUser) {
       setFormData(prev => ({ ...prev, userId: currentUser.id }));
@@ -170,13 +150,11 @@ export default function AddEntryPage() {
     if (value === null || value === undefined) return '';
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
     }).format(value);
   };
 
-  // Função para converter string para número
   const parseCurrency = (value: string) => {
-    // Remove tudo que não é número, ponto ou vírgula
     const cleanValue = value.replace(/[^\d,.-]/g, '').replace(',', '.');
     return parseFloat(cleanValue) || 0;
   };
@@ -199,11 +177,9 @@ export default function AddEntryPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulário */}
         <div className="lg:col-span-2">
           <Card>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Seletor de Usuário */}
               {users.length > 1 && (
                 <>
                   <div>
@@ -214,7 +190,7 @@ export default function AddEntryPage() {
                     <Dropdown
                       value={formData.userId}
                       options={users}
-                      onChange={(e) => {
+                      onChange={e => {
                         const selectedUser = users.find(u => u.id === e.value);
                         if (selectedUser) {
                           setCurrentUser(selectedUser);
@@ -232,7 +208,6 @@ export default function AddEntryPage() {
                 </>
               )}
 
-              {/* Data e Dia da Semana */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -241,7 +216,7 @@ export default function AddEntryPage() {
                   </label>
                   <Calendar
                     value={formData.date}
-                    onChange={(e) => handleDateChange(e.value as Date)}
+                    onChange={e => handleDateChange(e.value as Date)}
                     dateFormat="dd/mm/yy"
                     className="w-full"
                     showIcon
@@ -257,7 +232,7 @@ export default function AddEntryPage() {
                   <Dropdown
                     value={formData.dayOfWeek}
                     options={daysOfWeek}
-                    onChange={(e) => handleInputChange('dayOfWeek', e.value)}
+                    onChange={e => handleInputChange('dayOfWeek', e.value)}
                     optionLabel="label"
                     optionValue="value"
                     className="w-full"
@@ -266,7 +241,6 @@ export default function AddEntryPage() {
                 </div>
               </div>
 
-              {/* Valores Financeiros */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -275,18 +249,15 @@ export default function AddEntryPage() {
                   </label>
                   <InputNumber
                     value={formData.grossAmount}
-                    onValueChange={(e) => handleInputChange('grossAmount', e.value || 0)}
+                    onValueChange={e => handleInputChange('grossAmount', e.value || 0)}
                     className="w-full"
                     min={0}
                     max={9999}
                     placeholder="0,00"
-                    // Remove mode="currency" e usa inputMode
                     inputMode="decimal"
-                    useGrouping={false} // Não agrupa milhares
+                    useGrouping={false}
                   />
-                  <small className="text-gray-500">
-                    Soma de TODOS os ganhos (Uber + 99 + Pop)
-                  </small>
+                  <small className="text-gray-500">Soma de TODOS os ganhos (Uber + 99 + Pop)</small>
                 </div>
 
                 <div>
@@ -296,7 +267,7 @@ export default function AddEntryPage() {
                   </label>
                   <InputNumber
                     value={formData.expenses}
-                    onValueChange={(e) => handleInputChange('expenses', e.value || 0)}
+                    onValueChange={e => handleInputChange('expenses', e.value || 0)}
                     className="w-full"
                     min={0}
                     max={99999}
@@ -304,13 +275,10 @@ export default function AddEntryPage() {
                     inputMode="decimal"
                     useGrouping={false}
                   />
-                  <small className="text-gray-500">
-                    Gasolina, alimentação, manutenção, etc.
-                  </small>
+                  <small className="text-gray-500">Gasolina, alimentação, manutenção, etc.</small>
                 </div>
               </div>
 
-              {/* Descrição */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   <i className="pi pi-comment mr-2"></i>
@@ -318,14 +286,13 @@ export default function AddEntryPage() {
                 </label>
                 <InputTextarea
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={e => handleInputChange('description', e.target.value)}
                   rows={3}
                   className="w-full"
                   placeholder="Ex: Boa demanda na 99 hoje, muita corrida curta no Uber, choveu à tarde..."
                 />
               </div>
 
-              {/* Botões */}
               <div className="flex flex-wrap gap-3 pt-4">
                 <Button
                   type="submit"
@@ -339,14 +306,16 @@ export default function AddEntryPage() {
                   label="Limpar"
                   icon="pi pi-trash"
                   className="p-button-outlined flex-1"
-                  onClick={() => setFormData({
-                    date: new Date(),
-                    dayOfWeek: '',
-                    grossAmount: 0,
-                    expenses: 0,
-                    description: '',
-                    userId: formData.userId,
-                  })}
+                  onClick={() =>
+                    setFormData({
+                      date: new Date(),
+                      dayOfWeek: '',
+                      grossAmount: 0,
+                      expenses: 0,
+                      description: '',
+                      userId: formData.userId,
+                    })
+                  }
                 />
                 <Button
                   type="button"
@@ -360,22 +329,21 @@ export default function AddEntryPage() {
           </Card>
         </div>
 
-        {/* Preview e Resumo */}
         <div className="lg:col-span-1">
           <Card title="Resumo do Dia" className="sticky top-6">
             <div className="space-y-4">
-              {/* Data e Dia */}
               <div className="text-center p-4 bg-gradient-to-r from-[#FFC107] to-black rounded-lg">
                 <div className="text-white text-sm">DATA SELECIONADA</div>
                 <div className="text-white text-2xl font-bold mt-1">
                   {formData.date.toLocaleDateString('pt-BR')}
                 </div>
                 <div className="text-white/80 text-sm mt-1">
-                  {formData.dayOfWeek ? formData.dayOfWeek.charAt(0).toUpperCase() + formData.dayOfWeek.slice(1) : '-'}
+                  {formData.dayOfWeek
+                    ? formData.dayOfWeek.charAt(0).toUpperCase() + formData.dayOfWeek.slice(1)
+                    : '-'}
                 </div>
               </div>
 
-              {/* Valores */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded">
                   <div className="flex items-center gap-2">
@@ -392,28 +360,34 @@ export default function AddEntryPage() {
                     <i className="pi pi-arrow-down-right text-red-500"></i>
                     <span className="font-medium">Gastos</span>
                   </div>
-                  <span className="font-bold text-red-600">
-                    R$ {formData.expenses.toFixed(2)}
-                  </span>
+                  <span className="font-bold text-red-600">R$ {formData.expenses.toFixed(2)}</span>
                 </div>
 
-                <div className={`flex justify-between items-center p-3 rounded ${netAmount >= 0
-                  ? 'bg-blue-50 dark:bg-blue-900/20'
-                  : 'bg-gray-50 dark:bg-gray-800'
-                  }`}>
+                <div
+                  className={`flex justify-between items-center p-3 rounded ${
+                    netAmount >= 0
+                      ? 'bg-blue-50 dark:bg-blue-900/20'
+                      : 'bg-gray-50 dark:bg-gray-800'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <i className={`pi pi-dollar ${netAmount >= 0 ? 'text-blue-500' : 'text-gray-500'
-                      }`}></i>
+                    <i
+                      className={`pi pi-dollar ${
+                        netAmount >= 0 ? 'text-blue-500' : 'text-gray-500'
+                      }`}
+                    ></i>
                     <span className="font-medium">Lucro Líquido</span>
                   </div>
-                  <span className={`font-bold text-lg ${netAmount >= 0 ? 'text-blue-600' : 'text-gray-600'
-                    }`}>
+                  <span
+                    className={`font-bold text-lg ${
+                      netAmount >= 0 ? 'text-blue-600' : 'text-gray-600'
+                    }`}
+                  >
                     R$ {netAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              {/* Dicas rápidas */}
               <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                 <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
                   <i className="pi pi-lightbulb text-[#FFC107]"></i>
@@ -435,7 +409,6 @@ export default function AddEntryPage() {
                 </ul>
               </div>
 
-              {/* Botão rápido para adicionar outro */}
               <Button
                 label="Adicionar Ontem"
                 icon="pi pi-history"

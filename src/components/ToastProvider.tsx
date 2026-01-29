@@ -63,9 +63,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <>
       <Toast ref={toast} position="top-right" />
-      <ToastContext.Provider
-        value={{ showSuccess, showError, showWarning, showInfo }}
-      >
+      <ToastContext.Provider value={{ showSuccess, showError, showWarning, showInfo }}>
         {children}
       </ToastContext.Provider>
     </>

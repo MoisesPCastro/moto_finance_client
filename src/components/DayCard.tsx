@@ -51,17 +51,13 @@ export default function DayCard({
           </div>
 
           {description && (
-            <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
-              {description}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{description}</p>
           )}
 
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
               <p className="text-xs text-gray-500">Bruto</p>
-              <p className="font-bold text-green-600">
-                R$ {grossAmount.toFixed(2)}
-              </p>
+              <p className="font-bold text-green-600">R$ {grossAmount.toFixed(2)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Gastos</p>
@@ -69,9 +65,7 @@ export default function DayCard({
             </div>
             <div>
               <p className="text-xs text-gray-500">Líquido</p>
-              <p
-                className={`font-bold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}
-              >
+              <p className={`font-bold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 R$ {netAmount.toFixed(2)}
               </p>
             </div>

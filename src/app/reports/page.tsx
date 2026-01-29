@@ -69,7 +69,7 @@ export default function ReportsPage() {
   const [chartOptions, setChartOptions] = useState({});
   const toast = useRef<Toast>(null);
   const { users } = useAuth();
-  const user = users[0]
+  const user = users[0];
 
   // Buscar dados da API
   const fetchReportData = async () => {
@@ -86,28 +86,66 @@ export default function ReportsPage() {
     try {
       setLoading(true);
 
-      // Buscar estatísticas do usuário
-      const statsResponse = await apiClient.getUserStats(user.id);
+      // Calcula datas baseado no tipo de relatório
+      let startDate: Date, endDate: Date;
+      const today = new Date();
+
+      if (reportType === 'weekly') {
+        // Semana atual (segunda a domingo)
+        const dayOfWeek = today.getDay();
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() + diffToMonday);
+        startDate.setHours(0, 0, 0, 0);
+
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+      } else {
+        // Mês selecionado
+        startDate = new Date(selectedYear, selectedMonth, 1);
+        endDate = new Date(selectedYear, selectedMonth + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+      }
+
+      // Formata datas para API
+      const formatDate = (date: Date): string => date.toISOString().split('T')[0];
+
+      // Buscar estatísticas FILTRADAS do usuário
+      const statsResponse = await apiClient.getUserStatsFiltered(user.id, {
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+      });
+
       const stats = statsResponse.data;
 
       // Buscar entradas do usuário
       const entriesResponse = await apiClient.getEntries(user.id);
       const entries = entriesResponse.data.entries || [];
 
-      let processedData: ReportData = { stats, entries };
+      // Filtrar entradas pelo período selecionado
+      const filteredEntries = entries.filter(entry => {
+        const entryDate = new Date(entry.date);
+        return entryDate >= startDate && entryDate <= endDate;
+      });
+
+      let processedData: ReportData = {
+        stats,
+        entries: filteredEntries, // Usa apenas as entradas filtradas
+      };
 
       // Processar dados baseado no tipo de relatório
       if (reportType === 'weekly') {
-        const weeklyData = processWeeklyData(entries);
+        const weeklyData = processWeeklyData(filteredEntries); // Passa apenas filteredEntries
         processedData.weekly = weeklyData;
       } else {
-        const monthlyData = processMonthlyData(entries, selectedYear, selectedMonth);
+        const monthlyData = processMonthlyData(filteredEntries, selectedYear, selectedMonth); // Passa apenas filteredEntries
         processedData.monthly = monthlyData;
       }
 
       setReportData(processedData);
       updateCharts(processedData);
-
     } catch (error: any) {
       console.error('Erro ao buscar dados:', error);
       toast.current?.show({
@@ -126,9 +164,7 @@ export default function ReportsPage() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const weeklyEntries = entries.filter(entry =>
-      new Date(entry.date) >= oneWeekAgo
-    );
+    const weeklyEntries = entries.filter(entry => new Date(entry.date) >= oneWeekAgo);
 
     // Agrupar por dia da semana
     const daysMap = new Map<string, WeeklyEntry>();
@@ -154,13 +190,12 @@ export default function ReportsPage() {
       dayData.net += entry.netAmount;
     });
 
-    const entriesArray = Array.from(daysMap.values())
-      .sort((a, b) => {
-        const daysOrder = daysOfWeek.map(d => d.substring(0, 3));
-        const aDay = a.day.substring(0, 3);
-        const bDay = b.day.substring(0, 3);
-        return daysOrder.indexOf(aDay) - daysOrder.indexOf(bDay);
-      });
+    const entriesArray = Array.from(daysMap.values()).sort((a, b) => {
+      const daysOrder = daysOfWeek.map(d => d.substring(0, 3));
+      const aDay = a.day.substring(0, 3);
+      const bDay = b.day.substring(0, 3);
+      return daysOrder.indexOf(aDay) - daysOrder.indexOf(bDay);
+    });
 
     // Calcular totais
     const totals = entriesArray.reduce(
@@ -211,8 +246,9 @@ export default function ReportsPage() {
       weekData.net += entry.netAmount;
     });
 
-    const byWeek = Array.from(weeksMap.values())
-      .sort((a, b) => parseInt(a.week.split(' ')[1]) - parseInt(b.week.split(' ')[1]));
+    const byWeek = Array.from(weeksMap.values()).sort(
+      (a, b) => parseInt(a.week.split(' ')[1]) - parseInt(b.week.split(' ')[1])
+    );
 
     // Calcular totais
     const totals = byWeek.reduce(
@@ -258,7 +294,7 @@ export default function ReportsPage() {
   const updateCharts = (data: ReportData) => {
     const documentStyle = getComputedStyle(document.documentElement);
 
-    if (reportType === 'weekly' && data.weekly) {
+    if (reportType === 'weekly' && data.weekly && data.weekly.entries.length > 0) {
       // Gráfico de barras para semana
       const chartData = {
         labels: data.weekly.entries.map(e => e.day.split(' ')[0]),
@@ -285,58 +321,131 @@ export default function ReportsPage() {
       setChartOptions({
         responsive: true,
         maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Desempenho Semanal',
+            font: {
+              size: 16,
+            },
+          },
+        },
         scales: {
           y: {
             beginAtZero: true,
             ticks: {
               callback: function (value: any) {
                 return 'R$ ' + value.toFixed(2);
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       });
-
     } else if (reportType === 'monthly' && data.monthly) {
-      // Gráfico de pizza para categorias mensais
-      const chartData = {
-        labels: data.monthly.byCategory.map(c => c.category),
-        datasets: [
-          {
-            data: data.monthly.byCategory.map(c => c.amount),
-            backgroundColor: [
-              documentStyle.getPropertyValue('--red-500'),
-              documentStyle.getPropertyValue('--orange-500'),
-              documentStyle.getPropertyValue('--blue-500'),
-              documentStyle.getPropertyValue('--green-500'),
-              documentStyle.getPropertyValue('--purple-500'),
-              documentStyle.getPropertyValue('--yellow-500'),
-            ],
-          },
-        ],
-      };
+      // VERIFICA se temos dados para pizza (categorias) ou barras (semanas)
+      if (data.monthly.byCategory && data.monthly.byCategory.length > 0) {
+        // Gráfico de pizza para categorias mensais
+        const chartData = {
+          labels: data.monthly.byCategory.map(c => c.category || 'Sem categoria'),
+          datasets: [
+            {
+              data: data.monthly.byCategory.map(c => c.amount),
+              backgroundColor: [
+                documentStyle.getPropertyValue('--red-500'),
+                documentStyle.getPropertyValue('--orange-500'),
+                documentStyle.getPropertyValue('--blue-500'),
+                documentStyle.getPropertyValue('--green-500'),
+                documentStyle.getPropertyValue('--purple-500'),
+                documentStyle.getPropertyValue('--yellow-500'),
+              ],
+            },
+          ],
+        };
 
-      setChartData(chartData);
-      setChartOptions({
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
+        setChartData(chartData);
+        setChartOptions({
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Distribuição de Gastos por Categoria',
+              font: {
+                size: 16,
+              },
+            },
+            legend: {
+              position: 'bottom',
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context: any) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: R$ ${value.toFixed(2)} (${percentage}%)`;
+                },
+              },
+            },
           },
-          tooltip: {
-            callbacks: {
-              label: function (context: any) {
-                const label = context.label || '';
-                const value = context.raw || 0;
-                const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-                const percentage = Math.round((value / total) * 100);
-                return `${label}: R$ ${value.toFixed(2)} (${percentage}%)`;
-              }
-            }
-          }
-        }
-      });
+        });
+      } else if (data.monthly.byWeek && data.monthly.byWeek.length > 0) {
+        // Se não tem categorias, mostra gráfico de barras por semana
+        const chartData = {
+          labels: data.monthly.byWeek.map(w => w.week),
+          datasets: [
+            {
+              label: 'Ganho Bruto',
+              backgroundColor: documentStyle.getPropertyValue('--green-500'),
+              data: data.monthly.byWeek.map(w => w.gross),
+            },
+            {
+              label: 'Gastos',
+              backgroundColor: documentStyle.getPropertyValue('--red-500'),
+              data: data.monthly.byWeek.map(w => w.expenses),
+            },
+            {
+              label: 'Lucro Líquido',
+              backgroundColor: documentStyle.getPropertyValue('--blue-500'),
+              data: data.monthly.byWeek.map(w => w.net),
+            },
+          ],
+        };
+
+        setChartData(chartData);
+        setChartOptions({
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Desempenho Mensal por Semana',
+              font: {
+                size: 16,
+              },
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function (value: any) {
+                  return 'R$ ' + value.toFixed(2);
+                },
+              },
+            },
+          },
+        });
+      } else {
+        // Não tem dados para mostrar
+        setChartData({});
+        setChartOptions({});
+      }
+    } else {
+      // Não tem dados para mostrar
+      setChartData({});
+      setChartOptions({});
     }
   };
 
@@ -366,6 +475,7 @@ export default function ReportsPage() {
   ];
 
   const exportToCSV = () => {
+    // Usa reportData.entries que já está filtrado
     if (!reportData?.entries || reportData.entries.length === 0) {
       toast.current?.show({
         severity: 'warn',
@@ -377,7 +487,19 @@ export default function ReportsPage() {
     }
 
     try {
-      const headers = ['Data', 'Descrição', 'Categoria', 'Bruto (R$)', 'Gastos (R$)', 'Líquido (R$)'];
+      const periodLabel =
+        reportType === 'weekly'
+          ? 'esta_semana'
+          : `${months[selectedMonth].label.toLowerCase()}_${selectedYear}`;
+
+      const headers = [
+        'Data',
+        'Descrição',
+        'Categoria',
+        'Bruto (R$)',
+        'Gastos (R$)',
+        'Líquido (R$)',
+      ];
       const csvData = reportData.entries.map(entry => [
         new Date(entry.date).toLocaleDateString('pt-BR'),
         entry.description || '',
@@ -387,21 +509,18 @@ export default function ReportsPage() {
         entry.netAmount.toFixed(2),
       ]);
 
-      const csvContent = [
-        headers.join(','),
-        ...csvData.map(row => row.join(','))
-      ].join('\n');
+      const csvContent = [headers.join(','), ...csvData.map(row => row.join(','))].join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `relatorio_${reportType}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `relatorio_${periodLabel}_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
 
       toast.current?.show({
         severity: 'success',
         summary: 'Sucesso',
-        detail: 'Relatório exportado com sucesso!',
+        detail: `Relatório ${reportType === 'weekly' ? 'semanal' : 'mensal'} exportado com sucesso!`,
         life: 3000,
       });
     } catch (error) {
@@ -471,13 +590,11 @@ export default function ReportsPage() {
       <Card>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">
-              Tipo de Relatório
-            </label>
+            <label className="block text-sm font-medium mb-2">Tipo de Relatório</label>
             <Dropdown
               value={reportType}
               options={reportTypes}
-              onChange={(e) => setReportType(e.value)}
+              onChange={e => setReportType(e.value)}
               className="w-full"
             />
           </div>
@@ -487,7 +604,7 @@ export default function ReportsPage() {
             <Dropdown
               value={selectedYear}
               options={years}
-              onChange={(e) => setSelectedYear(e.value)}
+              onChange={e => setSelectedYear(e.value)}
               className="w-full"
             />
           </div>
@@ -497,7 +614,7 @@ export default function ReportsPage() {
             <Dropdown
               value={selectedMonth}
               options={months}
-              onChange={(e) => setSelectedMonth(e.value)}
+              onChange={e => setSelectedMonth(e.value)}
               className="w-full"
               disabled={reportType === 'weekly'}
             />
@@ -548,7 +665,7 @@ export default function ReportsPage() {
         </div>
       )}
       {/* Abas */}
-      <TabView activeIndex={activeTab} onTabChange={(e) => setActiveTab(e.index)}>
+      <TabView activeIndex={activeTab} onTabChange={e => setActiveTab(e.index)}>
         <TabPanel header="Visão Geral">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Gráfico */}
@@ -563,7 +680,9 @@ export default function ReportsPage() {
             </Card>
 
             {/* Totais */}
-            <Card title="Totais">
+            <Card
+              title={`Totais - ${reportType === 'weekly' ? 'Esta Semana' : months[selectedMonth].label}`}
+            >
               {reportType === 'weekly' && reportData?.weekly ? (
                 <div className="space-y-4">
                   <div className="text-center p-4 bg-gradient-to-r from-[#FFC107] to-black rounded-lg">
@@ -571,9 +690,7 @@ export default function ReportsPage() {
                     <div className="text-white text-3xl font-bold mt-2">
                       R$ {reportData.weekly.totals.net.toFixed(2)}
                     </div>
-                    <div className="text-white/80 text-sm mt-1">
-                      Lucro Líquido
-                    </div>
+                    <div className="text-white/80 text-sm mt-1">Lucro Líquido</div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -603,8 +720,8 @@ export default function ReportsPage() {
                       <div>
                         <h4 className="font-bold mb-3">Melhor Dia da Semana</h4>
                         {(() => {
-                          const bestDay = reportData.weekly.entries.reduce(
-                            (prev, current) => prev.net > current.net ? prev : current,
+                          const bestDay = reportData.weekly.entries.reduce((prev, current) =>
+                            prev.net > current.net ? prev : current
                           );
                           return (
                             <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded">
@@ -629,9 +746,7 @@ export default function ReportsPage() {
                     <div className="text-white text-3xl font-bold mt-2">
                       R$ {reportData.monthly.totals.net.toFixed(2)}
                     </div>
-                    <div className="text-white/80 text-sm mt-1">
-                      Lucro Líquido
-                    </div>
+                    <div className="text-white/80 text-sm mt-1">Lucro Líquido</div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -654,24 +769,22 @@ export default function ReportsPage() {
                       <Divider />
                       <div>
                         <h4 className="font-bold mb-3">Distribuição de Gastos</h4>
-                        {reportData.monthly.byCategory.map(
-                          (cat, index) => (
-                            <div key={index} className="mb-3">
-                              <div className="flex justify-between text-sm mb-1">
-                                <span>{cat.category}</span>
-                                <span>
-                                  R$ {cat.amount.toFixed(2)} ({cat.percentage.toFixed(1)}%)
-                                </span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div
-                                  className="bg-blue-500 h-2 rounded-full"
-                                  style={{ width: `${cat.percentage}%` }}
-                                ></div>
-                              </div>
+                        {reportData.monthly.byCategory.map((cat, index) => (
+                          <div key={index} className="mb-3">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>{cat.category}</span>
+                              <span>
+                                R$ {cat.amount.toFixed(2)} ({cat.percentage.toFixed(1)}%)
+                              </span>
                             </div>
-                          ),
-                        )}
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-500 h-2 rounded-full"
+                                style={{ width: `${cat.percentage}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </>
                   )}
@@ -699,20 +812,24 @@ export default function ReportsPage() {
                     field="gross"
                     header="Bruto (R$)"
                     sortable
-                    body={(rowData) => rowData.gross.toFixed(2)}
+                    body={rowData => rowData.gross.toFixed(2)}
                   />
                   <Column
                     field="expenses"
                     header="Gastos (R$)"
                     sortable
-                    body={(rowData) => rowData.expenses.toFixed(2)}
+                    body={rowData => rowData.expenses.toFixed(2)}
                   />
                   <Column
                     field="net"
                     header="Líquido (R$)"
                     sortable
-                    body={(rowData) => (
-                      <span className={rowData.net >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                    body={rowData => (
+                      <span
+                        className={
+                          rowData.net >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'
+                        }
+                      >
                         {rowData.net.toFixed(2)}
                       </span>
                     )}
@@ -729,20 +846,24 @@ export default function ReportsPage() {
                     field="gross"
                     header="Bruto (R$)"
                     sortable
-                    body={(rowData) => rowData.gross.toFixed(2)}
+                    body={rowData => rowData.gross.toFixed(2)}
                   />
                   <Column
                     field="expenses"
                     header="Gastos (R$)"
                     sortable
-                    body={(rowData) => rowData.expenses.toFixed(2)}
+                    body={rowData => rowData.expenses.toFixed(2)}
                   />
                   <Column
                     field="net"
                     header="Líquido (R$)"
                     sortable
-                    body={(rowData) => (
-                      <span className={rowData.net >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                    body={rowData => (
+                      <span
+                        className={
+                          rowData.net >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'
+                        }
+                      >
                         {rowData.net.toFixed(2)}
                       </span>
                     )}
@@ -781,7 +902,13 @@ export default function ReportsPage() {
                     header="Líquido (R$)"
                     sortable
                     body={(rowData: IEntry) => (
-                      <span className={rowData.netAmount >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                      <span
+                        className={
+                          rowData.netAmount >= 0
+                            ? 'text-green-600 font-bold'
+                            : 'text-red-600 font-bold'
+                        }
+                      >
                         {rowData.netAmount.toFixed(2)}
                       </span>
                     )}
@@ -789,9 +916,7 @@ export default function ReportsPage() {
                 </DataTable>
               )
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                Nenhum registro encontrado
-              </div>
+              <div className="text-center py-8 text-gray-500">Nenhum registro encontrado</div>
             )}
           </Card>
         </TabPanel>
@@ -800,9 +925,7 @@ export default function ReportsPage() {
           <Card>
             <div className="text-center py-8">
               <i className="pi pi-chart-line text-4xl text-gray-300 mb-3"></i>
-              <p className="text-gray-500">
-                Comparativo entre meses em desenvolvimento
-              </p>
+              <p className="text-gray-500">Comparativo entre meses em desenvolvimento</p>
               <p className="text-sm text-gray-400 mt-2">
                 Em breve você poderá comparar seu desempenho mês a mês
               </p>
