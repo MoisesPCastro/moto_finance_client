@@ -40,44 +40,29 @@ export const getFirstDayOfMonth = (): string => {
  * @param date Data (Date object ou string)
  * @returns Data formatada como DD/MM/YYYY
  */
-export const formatDateToDisplay = (date: Date | string): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export function formatDateToDisplay(dateStr: string) {
+  const [year, month, day] = dateStr.split('-').map(Number);
 
-  if (isNaN(d.getTime())) {
-    return 'Data inválida';
-  }
+  const date = new Date(year, month - 1, day); // LOCAL TIME ✅
 
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-
-  return `${day}/${month}/${year}`;
-};
+  return date.toLocaleDateString('pt-BR');
+}
 
 /**
  * Obtém o nome do dia da semana em português
  * @param date Data (Date object ou string)
  * @returns Nome do dia da semana (ex: "Segunda-feira")
  */
-export const getDayOfWeekName = (date: Date | string): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export function getDayOfWeekName(dateStr: string) {
+  const [year, month, day] = dateStr.split('-').map(Number);
 
-  if (isNaN(d.getTime())) {
-    return 'Data inválida';
-  }
+  // cria data LOCAL, sem UTC
+  const date = new Date(year, month - 1, day, 12, 0, 0);
 
-  const days = [
-    'Domingo',
-    'Segunda-feira',
-    'Terça-feira',
-    'Quarta-feira',
-    'Quinta-feira',
-    'Sexta-feira',
-    'Sábado',
-  ];
-
-  return days[d.getDay()];
-};
+  return date.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+  });
+}
 
 /**
  * Obtém a abreviação do dia da semana em português

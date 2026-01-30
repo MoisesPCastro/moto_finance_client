@@ -10,13 +10,7 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
 import { useRef } from 'react';
-import {
-  formatDate,
-  formatDateForAPI,
-  formatDateToDisplay,
-  getDayOfWeekName,
-  getToday,
-} from '../../utils/dates';
+import { formatDateForAPI, formatDateToDisplay, getDayOfWeekName } from '../../utils/dates';
 import { IDayDetails, IDaySummary } from '../../lib/interface';
 import apiClient from '../../lib/api';
 import DayCard from '../../components/DayCard';
