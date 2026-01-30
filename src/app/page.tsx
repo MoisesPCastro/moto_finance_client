@@ -256,7 +256,7 @@ export default function Dashboard() {
             <span className="text-sm text-gray-500">• Todos os apps somados</span>
           </div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-            Dashboard - {currentUser.name}
+            {currentUser.name}
             <span className="text-lg font-normal text-gray-500 ml-2">
               (
               {viewType === 'week'
