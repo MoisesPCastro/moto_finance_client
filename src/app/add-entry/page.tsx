@@ -14,6 +14,8 @@ import { ProgressSpinner } from 'primereact/progressspinner';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ToastProvider';
+import { DAYS_OF_WEEK_OPTIONS } from '../../utils/daysOfWeek';
+import { getDayOfWeekFromDate } from '../../utils/dates';
 
 export default function AddEntryPage() {
   const router = useRouter();
@@ -32,46 +34,8 @@ export default function AddEntryPage() {
     userId: currentUser?.id || '',
   });
 
-  const daysOfWeek = [
-    { label: 'Segunda-feira', value: 'segunda' },
-    { label: 'Terça-feira', value: 'terça' },
-    { label: 'Quarta-feira', value: 'quarta' },
-    { label: 'Quinta-feira', value: 'quinta' },
-    { label: 'Sexta-feira', value: 'sexta' },
-    { label: 'Sábado', value: 'sábado' },
-    { label: 'Domingo', value: 'domingo' },
-  ];
-
   const netAmount = formData.grossAmount - formData.expenses;
 
-  const handleDateChange = (date: Date) => {
-    const daysMap = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-
-    const dayIndex = date.getDay();
-    const dayOfWeekPortuguese = daysMap[dayIndex];
-
-    setFormData({
-      ...formData,
-      date,
-      dayOfWeek: dayOfWeekPortuguese,
-    });
-  };
-
-  const formatDayForDisplay = (day: string) => {
-    if (!day) return '';
-
-    const displayMap: Record<string, string> = {
-      segunda: 'Segunda-feira',
-      terça: 'Terça-feira',
-      quarta: 'Quarta-feira',
-      quinta: 'Quinta-feira',
-      sexta: 'Sexta-feira',
-      sábado: 'Sábado',
-      domingo: 'Domingo',
-    };
-
-    return displayMap[day] || day.charAt(0).toUpperCase() + day.slice(1);
-  };
   const handleInputChange = (field: string, value: any) => {
     setFormData({
       ...formData,
@@ -146,17 +110,12 @@ export default function AddEntryPage() {
     );
   }
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null || value === undefined) return '';
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  };
-
-  const parseCurrency = (value: string) => {
-    const cleanValue = value.replace(/[^\d,.-]/g, '').replace(',', '.');
-    return parseFloat(cleanValue) || 0;
+  const handleDateChange = (date: Date) => {
+    setFormData(prev => ({
+      ...prev,
+      date,
+      dayOfWeek: getDayOfWeekFromDate(date),
+    }));
   };
 
   return (
@@ -231,7 +190,7 @@ export default function AddEntryPage() {
 
                   <Dropdown
                     value={formData.dayOfWeek}
-                    options={daysOfWeek}
+                    options={DAYS_OF_WEEK_OPTIONS}
                     onChange={e => handleInputChange('dayOfWeek', e.value)}
                     optionLabel="label"
                     optionValue="value"

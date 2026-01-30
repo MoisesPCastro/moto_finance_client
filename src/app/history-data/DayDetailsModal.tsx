@@ -1,26 +1,35 @@
-// components/history/DayDetailsModal.tsx
-import React from 'react';
 import { Dialog } from 'primereact/dialog';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Tag } from 'primereact/tag';
 import { Divider } from 'primereact/divider';
 import { ProgressBar } from 'primereact/progressbar';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import { Tooltip } from 'primereact/tooltip';
-import { formatDateToDisplay, getDayOfWeekName } from '../../utils/dates';
+import { useRouter } from 'next/navigation';
+import {
+  formatDateStringToDisplay,
+  formatDateToDisplay,
+  getDayOfWeekFromDateString,
+} from '../../utils/dates';
 import { IDayDetails, IEntry } from '../../lib/interface';
+import apiClient from '../../lib/api';
+import { useToast } from '../../components/ToastProvider';
 
 interface DayDetailsModalProps {
   dayDetails: IDayDetails | null;
   visible: boolean;
   onHide: () => void;
-  onExport?: (format: 'pdf' | 'excel') => void;
+  onDeleted: () => Promise<void>;
 }
 
-export function DayDetailsModal({ dayDetails, visible, onHide, onExport }: DayDetailsModalProps) {
+export function DayDetailsModal({ dayDetails, visible, onHide, onDeleted }: DayDetailsModalProps) {
   if (!dayDetails) return null;
+  const router = useRouter();
+  const toast = useToast();
+  const idEntries = dayDetails.entries[0].id;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -29,6 +38,29 @@ export function DayDetailsModal({ dayDetails, visible, onHide, onExport }: DayDe
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
+  };
+
+  const confirmDelete = (id: string) => {
+    confirmDialog({
+      header: 'Confirmar exclusão',
+      message: 'Tem certeza que deseja excluir este registro? Essa ação não pode ser desfeita.',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Excluir',
+      rejectLabel: 'Cancelar',
+      acceptClassName: 'p-button-danger',
+
+      accept: async () => {
+        try {
+          await apiClient.deleteEntry(id);
+
+          toast.showSuccess('Registro excluído com sucesso');
+          await onDeleted();
+          onHide();
+        } catch (error: any) {
+          toast.showError(error.response?.data?.message || 'Erro ao excluir registro');
+        }
+      },
+    });
   };
 
   const gains = dayDetails.entries.filter(e => e.netAmount > 0);
@@ -84,9 +116,9 @@ export function DayDetailsModal({ dayDetails, visible, onHide, onExport }: DayDe
     <div className="flex items-center gap-2">
       <i className="pi pi-calendar text-blue-500" />
       <span className="font-bold text-xl text-gray-800 dark:text-white">
-        Detalhes do Dia - {formatDateToDisplay(dayDetails.date)}
+        Detalhes do Dia - {formatDateStringToDisplay(dayDetails.date)}{' '}
       </span>
-      <Tag value={getDayOfWeekName(dayDetails.date)} severity="info" className="ml-2" />
+      <Tag value={getDayOfWeekFromDateString(dayDetails.date)} />
     </div>
   );
 
@@ -100,16 +132,19 @@ export function DayDetailsModal({ dayDetails, visible, onHide, onExport }: DayDe
       />
       <div className="flex gap-2">
         <Button
-          label="Exportar PDF"
-          icon="pi pi-file-pdf"
-          onClick={() => onExport?.('pdf')}
-          className="p-button-outlined border-purple-500 text-purple-500 hover:bg-purple-50 dark:border-purple-400 dark:text-purple-400 dark:hover:bg-purple-900/20"
+          label="Editar"
+          icon="pi pi-pencil"
+          className="p-button-outlined"
+          onClick={() => {
+            router.push(`/edit-entry/${idEntries}`);
+          }}
         />
+
         <Button
-          label="Exportar Excel"
-          icon="pi pi-file-excel"
-          onClick={() => onExport?.('excel')}
-          className="p-button-outlined border-green-500 text-green-500 hover:bg-green-50 dark:border-green-400 dark:text-green-400 dark:hover:bg-green-900/20"
+          label="Excluir"
+          icon="pi pi-trash"
+          className="p-button-danger p-button-outlined"
+          onClick={() => confirmDelete(idEntries)}
         />
       </div>
     </div>
@@ -453,6 +488,7 @@ export function DayDetailsModal({ dayDetails, visible, onHide, onExport }: DayDe
               </div>
             </div>
           </div>
+          <ConfirmDialog />
         </ScrollPanel>
       </Dialog>
     </>

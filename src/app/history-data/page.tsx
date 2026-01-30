@@ -55,32 +55,17 @@ export default function HistoryPage() {
       return;
     }
 
-    console.log('searchDate original:', searchDate);
-    console.log('searchDate tipo:', typeof searchDate);
-
     try {
       setSearchLoading(true);
 
-      // Criar uma nova data para evitar problemas de referência
-      const date = new Date(searchDate);
-      console.log('date objeto:', date);
-      console.log('date.toISOString():', date.toISOString());
+      console.log('Data enviada para API:', searchDate);
 
-      // Formatar manualmente
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-
-      console.log('formattedDate para API:', formattedDate);
-
-      const response = await apiClient.getDayDetails(formattedDate);
-      console.log('Resposta da API:', response.data);
+      // 👉 envie direto
+      const response = await apiClient.getDayDetails(searchDate);
 
       setSelectedDay(response.data);
       setModalVisible(true);
     } catch (error: any) {
-      console.error('Erro completo:', error);
       if (error.response?.status === 404) {
         showInfo(
           'Sem registros',
@@ -107,19 +92,6 @@ export default function HistoryPage() {
     } catch (error: any) {
       showError('Erro ao carregar detalhes', error.message);
     }
-  };
-
-  const handleExport = (format: 'pdf' | 'excel') => {
-    showSuccess('Exportação', `Exportando para ${format.toUpperCase()}...`);
-  };
-
-  const showSuccess = (title: string, message: string) => {
-    toast.current?.show({
-      severity: 'success',
-      summary: title,
-      detail: message,
-      life: 3000,
-    });
   };
 
   const showError = (title: string, message: string) => {
@@ -180,22 +152,15 @@ export default function HistoryPage() {
             </h3>
             <div className="flex gap-2">
               <Calendar
-                value={searchDate ? new Date(searchDate) : null}
+                value={searchDate ? new Date(`${searchDate}T00:00:00`) : null}
+                placeholder="Selecione uma data"
                 onChange={e => {
                   if (e.value) {
-                    const formattedDate = formatDateForAPI(e.value);
-                    setSearchDate(formattedDate);
-                    console.log('Data selecionada:', formattedDate); // Para debug
+                    setSearchDate(formatDateForAPI(e.value));
                   } else {
                     setSearchDate('');
                   }
                 }}
-                dateFormat="dd/mm/yy"
-                showIcon
-                maxDate={new Date()}
-                placeholder="Selecione uma data"
-                className="flex-1"
-                inputClassName="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm"
               />
               <Button
                 icon="pi pi-search"
@@ -246,6 +211,7 @@ export default function HistoryPage() {
               <div className="space-y-4">
                 {recentDays.map(day => (
                   <DayCard
+                    key={day.date}
                     day={getDayOfWeekName(day.date)}
                     date={formatDateToDisplay(day.date)}
                     grossAmount={day.totalGrossAmount}
@@ -280,7 +246,7 @@ export default function HistoryPage() {
         dayDetails={selectedDay}
         visible={modalVisible}
         onHide={() => setModalVisible(false)}
-        onExport={handleExport}
+        onDeleted={loadRecentDays}
       />
     </div>
   );

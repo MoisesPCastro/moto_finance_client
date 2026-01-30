@@ -186,3 +186,33 @@ export const formatDateForAPI = (date: Date | string): string => {
 
   return `${year}-${month}-${day}`;
 };
+
+// YYYY-MM-DD → DD/MM/YYYY (sem Date)
+export const formatDateStringToDisplay = (date: string): string => {
+  const [year, month, day] = date.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+// YYYY-MM-DD → Dia da semana (timezone-safe)
+export const getDayOfWeekFromDateString = (date: string): string => {
+  const [year, month, day] = date.split('-').map(Number);
+
+  const d = new Date(year, month - 1, day);
+  const days = [
+    'Domingo',
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira',
+    'Sábado',
+  ];
+
+  return days[d.getDay()];
+};
+
+export const getDayOfWeekFromDate = (date: Date): string => {
+  const daysMap = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+
+  return daysMap[date.getDay()];
+};
