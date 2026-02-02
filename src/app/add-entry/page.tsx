@@ -361,23 +361,8 @@ export default function AddEntryPage() {
                     <i className="pi pi-check-circle text-green-500 mt-0.5"></i>
                     <span>Anote todos os gastos, mesmo pequenos</span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <i className="pi pi-check-circle text-green-500 mt-0.5"></i>
-                    <span>Use observações para lembrar do dia</span>
-                  </li>
                 </ul>
               </div>
-
-              <Button
-                label="Adicionar Ontem"
-                icon="pi pi-history"
-                className="w-full p-button-outlined"
-                onClick={() => {
-                  const yesterday = new Date();
-                  yesterday.setDate(yesterday.getDate() - 1);
-                  handleDateChange(yesterday);
-                }}
-              />
             </div>
           </Card>
         </div>
