@@ -71,7 +71,6 @@ export default function ReportsPage() {
   const { users } = useAuth();
   const user = users[0];
 
-  // Buscar dados da API
   const fetchReportData = async () => {
     if (!user?.id) {
       toast.current?.show({
@@ -86,12 +85,10 @@ export default function ReportsPage() {
     try {
       setLoading(true);
 
-      // Calcula datas baseado no tipo de relatório
       let startDate: Date, endDate: Date;
       const today = new Date();
 
       if (reportType === 'weekly') {
-        // Semana atual (segunda a domingo)
         const dayOfWeek = today.getDay();
         const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
@@ -103,16 +100,13 @@ export default function ReportsPage() {
         endDate.setDate(startDate.getDate() + 6);
         endDate.setHours(23, 59, 59, 999);
       } else {
-        // Mês selecionado
         startDate = new Date(selectedYear, selectedMonth, 1);
         endDate = new Date(selectedYear, selectedMonth + 1, 0);
         endDate.setHours(23, 59, 59, 999);
       }
 
-      // Formata datas para API
       const formatDate = (date: Date): string => date.toISOString().split('T')[0];
 
-      // Buscar estatísticas FILTRADAS do usuário
       const statsResponse = await apiClient.getUserStatsFiltered(user.id, {
         startDate: formatDate(startDate),
         endDate: formatDate(endDate),
@@ -120,11 +114,9 @@ export default function ReportsPage() {
 
       const stats = statsResponse.data;
 
-      // Buscar entradas do usuário
       const entriesResponse = await apiClient.getEntries(user.id);
       const entries = entriesResponse.data.entries || [];
 
-      // Filtrar entradas pelo período selecionado
       const filteredEntries = entries.filter(entry => {
         const entryDate = new Date(entry.date);
         return entryDate >= startDate && entryDate <= endDate;
@@ -132,15 +124,14 @@ export default function ReportsPage() {
 
       let processedData: ReportData = {
         stats,
-        entries: filteredEntries, // Usa apenas as entradas filtradas
+        entries: filteredEntries,
       };
 
-      // Processar dados baseado no tipo de relatório
       if (reportType === 'weekly') {
-        const weeklyData = processWeeklyData(filteredEntries); // Passa apenas filteredEntries
+        const weeklyData = processWeeklyData(filteredEntries);
         processedData.weekly = weeklyData;
       } else {
-        const monthlyData = processMonthlyData(filteredEntries, selectedYear, selectedMonth); // Passa apenas filteredEntries
+        const monthlyData = processMonthlyData(filteredEntries, selectedYear, selectedMonth);
         processedData.monthly = monthlyData;
       }
 
@@ -160,13 +151,11 @@ export default function ReportsPage() {
   };
 
   const processWeeklyData = (entries: IEntry[]) => {
-    // Últimos 7 dias
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const weeklyEntries = entries.filter(entry => new Date(entry.date) >= oneWeekAgo);
 
-    // Agrupar por dia da semana
     const daysMap = new Map<string, WeeklyEntry>();
     const daysOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
@@ -197,7 +186,6 @@ export default function ReportsPage() {
       return daysOrder.indexOf(aDay) - daysOrder.indexOf(bDay);
     });
 
-    // Calcular totais
     const totals = entriesArray.reduce(
       (acc, entry) => ({
         gross: acc.gross + entry.gross,
@@ -214,7 +202,6 @@ export default function ReportsPage() {
   };
 
   const processMonthlyData = (entries: IEntry[], year: number, month: number) => {
-    // Filtrar por mês selecionado
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0);
 
@@ -223,7 +210,6 @@ export default function ReportsPage() {
       return entryDate >= startDate && entryDate <= endDate;
     });
 
-    // Agrupar por semana
     const weeksMap = new Map<string, MonthlyWeek>();
 
     monthlyEntries.forEach(entry => {
@@ -250,7 +236,6 @@ export default function ReportsPage() {
       (a, b) => parseInt(a.week.split(' ')[1]) - parseInt(b.week.split(' ')[1])
     );
 
-    // Calcular totais
     const totals = byWeek.reduce(
       (acc, week) => ({
         gross: acc.gross + week.gross,
@@ -260,7 +245,6 @@ export default function ReportsPage() {
       { gross: 0, expenses: 0, net: 0 }
     );
 
-    // Agrupar por categoria
     const categoriesMap = new Map<string, number>();
     let totalExpenses = 0;
 
@@ -281,7 +265,6 @@ export default function ReportsPage() {
       });
     });
 
-    // Ordenar por maior valor
     byCategory.sort((a, b) => b.amount - a.amount);
 
     return {
@@ -295,7 +278,6 @@ export default function ReportsPage() {
     const documentStyle = getComputedStyle(document.documentElement);
 
     if (reportType === 'weekly' && data.weekly && data.weekly.entries.length > 0) {
-      // Gráfico de barras para semana
       const chartData = {
         labels: data.weekly.entries.map(e => e.day.split(' ')[0]),
         datasets: [
@@ -342,9 +324,7 @@ export default function ReportsPage() {
         },
       });
     } else if (reportType === 'monthly' && data.monthly) {
-      // VERIFICA se temos dados para pizza (categorias) ou barras (semanas)
       if (data.monthly.byCategory && data.monthly.byCategory.length > 0) {
-        // Gráfico de pizza para categorias mensais
         const chartData = {
           labels: data.monthly.byCategory.map(c => c.category || 'Sem categoria'),
           datasets: [
@@ -391,7 +371,6 @@ export default function ReportsPage() {
           },
         });
       } else if (data.monthly.byWeek && data.monthly.byWeek.length > 0) {
-        // Se não tem categorias, mostra gráfico de barras por semana
         const chartData = {
           labels: data.monthly.byWeek.map(w => w.week),
           datasets: [
@@ -438,12 +417,10 @@ export default function ReportsPage() {
           },
         });
       } else {
-        // Não tem dados para mostrar
         setChartData({});
         setChartOptions({});
       }
     } else {
-      // Não tem dados para mostrar
       setChartData({});
       setChartOptions({});
     }
@@ -475,7 +452,6 @@ export default function ReportsPage() {
   ];
 
   const exportToCSV = () => {
-    // Usa reportData.entries que já está filtrado
     if (!reportData?.entries || reportData.entries.length === 0) {
       toast.current?.show({
         severity: 'warn',
@@ -557,7 +533,6 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <Toast ref={toast} />
 
-      {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
@@ -586,7 +561,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Filtros */}
       <Card>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -632,7 +606,6 @@ export default function ReportsPage() {
         </div>
       </Card>
 
-      {/* Estatísticas rápidas */}
       {reportData?.stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="text-center">
@@ -664,7 +637,6 @@ export default function ReportsPage() {
           </Card>
         </div>
       )}
-      {/* Abas */}
       <TabView activeIndex={activeTab} onTabChange={e => setActiveTab(e.index)}>
         <TabPanel header="Visão Geral">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -679,7 +651,6 @@ export default function ReportsPage() {
               </div>
             </Card>
 
-            {/* Totais */}
             <Card
               title={`Totais - ${reportType === 'weekly' ? 'Esta Semana' : months[selectedMonth].label}`}
             >

@@ -8,7 +8,6 @@ import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import StatsCard from '@/components/StatsCard';
-import DayCard from '@/components/DayCard';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ToastProvider';
@@ -23,25 +22,20 @@ export default function Dashboard() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [viewType, setViewType] = useState('week');
   const [loading, setLoading] = useState(true);
-  const [entries, setEntries] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
-  const [monthlyGoal, setMonthlyGoal] = useState<number>(4000); // Pode vir da API futuramente
+  const monthlyGoal: number = 4000;
 
-  // Carregar dados
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Se não tem usuário mas tem usuários disponíveis, selecione o primeiro
         if (!currentUser && users.length > 0) {
           setCurrentUser(users[0]);
           return;
         }
 
-        // Se tem usuário, carrega dados
         if (currentUser) {
           await loadDashboardData();
         } else {
-          // Se não tem usuários, mostra mensagem
           setLoading(false);
         }
       } catch (error) {
@@ -53,24 +47,11 @@ export default function Dashboard() {
     loadData();
   }, [currentUser, users]);
 
-  // Adicione este novo useEffect para reagir a mudanças no filtro
   useEffect(() => {
     if (currentUser) {
       loadDashboardData();
     }
-  }, [viewType, selectedMonth]); // Recarrega quando filtro ou mês mudar
-
-  // Função auxiliar para formatar datas
-  const formatDateForAPI = (date: Date) => {
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD
-  };
-
-  // Função para obter dia da semana em português
-  const getDayOfWeek = (dateString: string) => {
-    const days = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-    const date = new Date(dateString);
-    return days[date.getDay()];
-  };
+  }, [viewType, selectedMonth]);
 
   const loadDashboardData = async (filterType = viewType, filterDate = selectedMonth) => {
     if (!currentUser) {
@@ -81,13 +62,12 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
-      // Calcula datas baseado no filtro
       let startDate, endDate;
       const today = new Date();
 
       if (filterType === 'week') {
-        const dayOfWeek = today.getDay(); // 0 = domingo, 1 = segunda, etc.
-        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Ajusta para começar na segunda
+        const dayOfWeek = today.getDay();
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
         startDate = new Date(today);
         startDate.setDate(today.getDate() + diffToMonday);
@@ -126,21 +106,16 @@ export default function Dashboard() {
         }
       }
 
-      // Processa entradas
       if (entriesResponse.status === 'fulfilled') {
         const allEntries = entriesResponse.value.data || [];
 
-        // Filtra entradas por data no frontend (para exibir na lista)
         const filteredEntries = allEntries.filter(entry => {
           const entryDate = new Date(entry.date);
           return entryDate >= startDate && entryDate <= endDate;
         });
-
-        setEntries(filteredEntries);
       } else {
         console.log('❌ Erro ao carregar entradas:', entriesResponse.reason);
         toast.showError('Erro ao carregar registros');
-        setEntries([]);
       }
     } catch (error: any) {
       console.error('❌ Erro geral no carregamento:', error);
@@ -155,7 +130,6 @@ export default function Dashboard() {
     { label: 'Este Mês', value: 'month' },
   ];
 
-  // Calcular progresso da meta
   const currentProgress = userStats?.totals?.netAmount || 0;
   const goalPercentage = Math.min((currentProgress / monthlyGoal) * 100, 100);
   const goalPercentageFormatted = parseFloat(goalPercentage.toFixed(1));
@@ -176,7 +150,6 @@ export default function Dashboard() {
     );
   }
 
-  // Se não tem usuários cadastrados
   if (users.length === 0) {
     return (
       <div className="text-center py-12">
@@ -189,7 +162,6 @@ export default function Dashboard() {
           className="btn-99"
           onClick={async () => {
             try {
-              // Criar usuário padrão
               const userData = {
                 email: 'motoboy@exemplo.com',
                 name: 'Motoboy Principal',
@@ -211,7 +183,6 @@ export default function Dashboard() {
     );
   }
 
-  // Se tem usuários mas nenhum está selecionado
   if (!currentUser) {
     return (
       <div className="text-center py-12">
@@ -248,7 +219,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
@@ -290,7 +260,7 @@ export default function Dashboard() {
             yearNavigator
             yearRange="2024:2026"
             className="w-full md:w-40"
-            disabled={viewType === 'week'} // Desabilita no modo semana
+            disabled={viewType === 'week'}
           />
           <Button
             label="Adicionar Dia"
@@ -327,7 +297,7 @@ export default function Dashboard() {
         />
 
         <StatsCard
-          title="Meta Mensal"
+          title="Meta Mensal (Lucro Liquido)"
           value={monthlyGoal}
           icon={<i className="pi pi-flag text-xl"></i>}
           color="info"
@@ -335,7 +305,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Progresso da Meta */}
       <Card
         title={`Progresso da Meta Mensal - ${selectedMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`}
       >
@@ -354,7 +323,6 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      {/* Destaques */}
       <Card title="Destaques">
         <div className="space-y-4">
           {userStats?.bestDay ? (
@@ -382,7 +350,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Estatística de média */}
           <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

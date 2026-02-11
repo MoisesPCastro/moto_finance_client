@@ -9,7 +9,6 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Cores da Uber (preto) e 99/Pop (amarelo)
         'uber-black': '#000000',
         'uber-gray': '#1F1F1F',
         '99-yellow': '#FFC107',
@@ -17,7 +16,6 @@ const config: Config = {
         'pop-yellow': '#FFD700',
         'pop-orange': '#FF8C00',
 
-        // Cores personalizadas do app
         primary: {
           DEFAULT: '#FFC107', // Amarelo 99
           dark: '#FF9800',

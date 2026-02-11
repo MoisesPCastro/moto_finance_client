@@ -4,13 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Divider } from 'primereact/divider';
-import { ProgressSpinner } from 'primereact/progressspinner';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ToastProvider';
@@ -22,7 +20,6 @@ export default function AddEntryPage() {
   const toast = useToast();
   const { currentUser, users, setCurrentUser } = useAuth();
 
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -101,14 +98,6 @@ export default function AddEntryPage() {
       setFormData(prev => ({ ...prev, userId: currentUser.id }));
     }
   }, [currentUser]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <ProgressSpinner />
-      </div>
-    );
-  }
 
   const handleDateChange = (date: Date) => {
     setFormData(prev => ({

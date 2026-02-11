@@ -49,7 +49,6 @@ export default function EditEntryPage() {
     userId: '',
   });
 
-  // 🔹 BUSCAR REGISTRO
   useEffect(() => {
     if (!id) return;
 
@@ -76,7 +75,6 @@ export default function EditEntryPage() {
     fetchEntry();
   }, [id]);
 
-  // 🔹 SALVAR ALTERAÇÕES
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -136,7 +134,6 @@ export default function EditEntryPage() {
             </>
           )}
 
-          {/* Data + Dia */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Calendar
               value={formData.date}

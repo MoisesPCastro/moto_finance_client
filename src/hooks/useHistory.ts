@@ -48,27 +48,22 @@ export function useHistory() {
   }, []);
 
   return {
-    // Estados
     loading,
     error,
 
-    // Funções principais
     getDayDetails,
     getRecentDaysSummary,
 
-    // Funções de formatação de data (do apiClient)
     formatDate: formatDate,
     getToday: getToday,
     getDateDaysAgo: getDateDaysAgo,
 
-    // Funções adicionais de formatação
     formatDateToDisplay,
     getDayOfWeekName,
     getDayOfWeekShort,
     addDays,
     getDaysDifference,
 
-    // Utilitários
     clearError: () => setError(null),
   };
 }

@@ -54,7 +54,6 @@ export default function HistoryPage() {
 
       console.log('Data enviada para API:', searchDate);
 
-      // 👉 envie direto
       const response = await apiClient.getDayDetails(searchDate);
 
       setSelectedDay(response.data);
@@ -138,7 +137,6 @@ export default function HistoryPage() {
 
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 mb-8 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Título e Input */}
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3 md:mb-0">
               <i className="pi pi-calendar mr-2"></i>
@@ -166,10 +164,8 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* Divisor */}
           <div className="hidden md:block h-12 w-px bg-gray-200 dark:bg-gray-700 mx-4"></div>
 
-          {/* Total de Dias */}
           <div className="text-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg min-w-[120px]">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total de Dias</div>
             <div className="text-xl font-bold text-gray-800 dark:text-white">
@@ -177,7 +173,6 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* Média Diária */}
           <div className="text-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg min-w-[120px]">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Média Diária</div>
             <div className="text-xl font-bold text-green-600">{formatCurrency(mediaDiaria)}</div>
@@ -185,7 +180,6 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* Últimos 7 Dias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card
           title={

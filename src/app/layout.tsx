@@ -5,7 +5,6 @@ import { Providers } from './providers';
 import Header from '@/components/Header';
 
 const inter = Inter({ subsets: ['latin'] });
-//
 export const metadata: Metadata = {
   title: 'Moto Finance',
   description: 'Controle seus ganhos do dia',
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
   },
 };
- 
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">

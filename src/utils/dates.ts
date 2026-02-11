@@ -1,5 +1,3 @@
-// utils/dates.ts
-
 /**
  * Formata data para o formato YYYY-MM-DD
  * @param date Data (Date object ou string)
@@ -8,7 +6,6 @@
 export const formatDate = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
 
-  // Garantir que é uma data válida
   if (isNaN(d.getTime())) {
     throw new Error('Data inválida fornecida para formatDate');
   }
@@ -155,7 +152,6 @@ export const formatDateForAPI = (date: Date | string): string => {
   let d: Date;
 
   if (typeof date === 'string') {
-    // Se já for YYYY-MM-DD, retorna
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return date;
     }
@@ -164,7 +160,6 @@ export const formatDateForAPI = (date: Date | string): string => {
     d = date;
   }
 
-  // Usar UTC para evitar problemas de timezone
   const year = d.getUTCFullYear();
   const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');

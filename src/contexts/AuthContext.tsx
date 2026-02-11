@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from '@/lib/api';
 import { IUser } from '@/lib/interface';
-
 interface AuthContextType {
   currentUser: IUser | null;
   users: IUser[];
@@ -28,17 +27,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Carregar usuários do localStorage na inicialização
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Tentar carregar do localStorage primeiro
         const savedUser = localStorage.getItem('motoFinance_currentUser');
         if (savedUser) {
           setCurrentUser(JSON.parse(savedUser));
         }
 
-        // Carregar lista de usuários
         await loadUsers();
       } catch (error) {
         console.error('Erro ao carregar dados iniciais:', error);
@@ -55,11 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiClient.getUsers();
       setUsers(response.data);
 
-      // Salvar no localStorage
       localStorage.setItem('motoFinance_users', JSON.stringify(response.data));
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
-      // Usar dados do localStorage como fallback
       const savedUsers = localStorage.getItem('motoFinance_users');
       if (savedUsers) {
         setUsers(JSON.parse(savedUsers));
@@ -69,11 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const createUser = async (data: { email: string; name: string; password: string }) => {
     const response = await apiClient.createUser(data);
-    await loadUsers(); // Recarregar lista de usuários
+    await loadUsers();
     return response.data;
   };
 
-  // Salvar usuário atual no localStorage quando mudar
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('motoFinance_currentUser', JSON.stringify(currentUser));
